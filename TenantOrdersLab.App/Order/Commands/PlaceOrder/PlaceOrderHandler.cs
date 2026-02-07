@@ -1,10 +1,9 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.App.Common;
 using TenantOrdersLab.App.Orders.Commands.PlaceOrder;
 using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.App.Common;
+using TenantOrdersLab.App.Abstractions.Common;
 
 namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
 {
@@ -17,9 +16,9 @@ namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
     /// </summary>
     public sealed class PlaceOrderHandler
     {
-        private readonly IOrdersDbContext _db;
+        private readonly BadCopyOrdersDbContext _db;
 
-        public PlaceOrderHandler(IOrdersDbContext db)
+        public PlaceOrderHandler(BadCopyOrdersDbContext db)
         {
             _db = db;
         }

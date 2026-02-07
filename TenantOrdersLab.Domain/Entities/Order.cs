@@ -1,9 +1,9 @@
-﻿
-using TenantOrdersLab.Domain.Abstractions;
+﻿using TenantOrdersLab.Domain.Abstractions;
 using TenantOrdersLab.Domain.Common;
 using TenantOrdersLab.Domain.Events;
+using TenantOrdersLab.Domain.ValueObjects;
 
-namespace TenantOrdersLab.Domain
+namespace TenantOrdersLab.Domain.Entities
 {
 
     public enum OrderStatus
@@ -12,10 +12,10 @@ namespace TenantOrdersLab.Domain
         Placed = 1,
         Paid = 2
     }
-    public class Order: ITenantScoped, IAudited, IHasDomainEvents
+    public class Order : ITenantScoped, IAudited, IHasDomainEvents
     {
         private readonly List<IDomainEvent> _domainEvents = new();
-        public int Id { get;  }
+        public int Id { get; }
         public Money Total { get; private set; }
         public int CustomerId { get; }
         public Customer? Customer { get; private set; }
@@ -28,7 +28,7 @@ namespace TenantOrdersLab.Domain
 
             if (id <= 0) throw new DomainException("Id must be a positive number.");
             if (customerId <= 0) throw new DomainException("CustomerId must be a positive number.");
-           // if (totalAmount <= 0) throw new DomainException("TotalAmount must be greater than zero.");
+            // if (totalAmount <= 0) throw new DomainException("TotalAmount must be greater than zero.");
             Id = id;
             Total = total ?? throw new ArgumentNullException(nameof(total));
             CustomerId = customerId;
@@ -49,9 +49,9 @@ namespace TenantOrdersLab.Domain
                 throw new DomainException("Only new orders can be placed.");
             Status = OrderStatus.Placed;
 
-           Raise(new OrderPlaced(Id, CustomerId));
+            Raise(new OrderPlaced(Id, CustomerId));
         }
-       
+
         private void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
 
         public static Order CreateNew(int id, object total)

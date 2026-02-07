@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace TenantOrdersLab.App.Abstractions
+namespace TenantOrdersLab.App.Abstractions.Persistence
 {
     /// <summary>
     /// Unit of Work boundary for the Application layer.

@@ -1,8 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using TenantOrdersLab.Domain;
+using TenantOrdersLab.Domain.Entities;
 
-namespace TenantOrdersLab.App.Abstractions
+namespace TenantOrdersLab.App.Abstractions.Persistence
 {
     /// <summary>
     /// Repository for the Customer aggregate root.

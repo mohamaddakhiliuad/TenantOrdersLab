@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using TenantOrdersLab.Domain.Abstractions;
 using TenantOrdersLab.Domain.Common;
 
-namespace TenantOrdersLab.Domain
+namespace TenantOrdersLab.Domain.Entities
 {
     public sealed class Customer : ITenantScoped, IAudited
     {

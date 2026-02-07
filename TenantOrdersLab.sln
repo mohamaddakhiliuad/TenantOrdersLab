@@ -21,6 +21,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.MD = README.MD
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DOC", "DOC", "{B779472B-6B61-450F-A056-D14F3EBFF77B}"
+	ProjectSection(SolutionItems) = preProject
+		TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md = TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md
+		TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md = TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,5 +58,6 @@ Global
 		{1D7A7D56-5683-41C9-B43A-AE8440A70A82} = {084C29CB-6DC2-4CD6-A312-A980E3499C6D}
 		{D2D02E37-534B-4532-949C-32173EE1BB15} = {084C29CB-6DC2-4CD6-A312-A980E3499C6D}
 		{27F5F166-9857-478C-ACE4-C9D5FD67C426} = {C3D5EDD5-17A4-4DA3-A4CD-B09178EA77AC}
+		{B779472B-6B61-450F-A056-D14F3EBFF77B} = {70A21E5E-708F-4146-98E8-6CD4CA367BC7}
 	EndGlobalSection
 EndGlobal

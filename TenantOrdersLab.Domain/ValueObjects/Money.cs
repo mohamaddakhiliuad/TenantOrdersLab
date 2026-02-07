@@ -4,19 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TenantOrdersLab.Domain
+namespace TenantOrdersLab.Domain.ValueObjects
 {
-    public class Money 
+    public class Money
     {
         public decimal Amount { get; }
         public string Currency { get; }
         public Money(decimal amount, string currency)
         {
             if (amount < 0)
-                 throw new ArgumentException("Amount cannot be negative", nameof(amount));
+                throw new ArgumentException("Amount cannot be negative", nameof(amount));
             if (string.IsNullOrWhiteSpace(currency)) throw new ArgumentException("Currency cannot be null or empty", nameof(currency));
             if (currency.Length != 3) throw new ArgumentException("Currency must be a 3-letter ISO code", nameof(currency));
-             Amount = amount;
+            Amount = amount;
             Currency = currency;
         }
 

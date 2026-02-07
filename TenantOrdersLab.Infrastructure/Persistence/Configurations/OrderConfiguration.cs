@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TenantOrdersLab.Domain;
+using TenantOrdersLab.Domain.Entities;
 
 namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
 {

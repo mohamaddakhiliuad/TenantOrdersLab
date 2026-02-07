@@ -2,11 +2,11 @@
 using System.Threading;
 using System.Threading.Tasks;
 using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.App.Common;
 using TenantOrdersLab.App.Orders.Commands.CreateOrder;
 using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.App.Common;
-using TenantOrdersLab.Domain;
+using TenantOrdersLab.Domain.Entities;
+using TenantOrdersLab.Domain.ValueObjects;
+using TenantOrdersLab.App.Abstractions.Common;
 
 namespace TenantOrdersLab.App.Orders.Commands.CreateOrder
 {
@@ -18,9 +18,9 @@ namespace TenantOrdersLab.App.Orders.Commands.CreateOrder
     /// </summary>
     public sealed class CreateOrderHandler
     {
-        private readonly IOrdersDbContext _db;
+        private readonly BadCopyOrdersDbContext _db;
 
-        public CreateOrderHandler(IOrdersDbContext db)
+        public CreateOrderHandler(BadCopyOrdersDbContext db)
         {
             _db = db;
         }

@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using TenantOrdersLab.App.Abstractions;
+using TenantOrdersLab.App.Abstractions.Persistence;
 
 namespace TenantOrdersLab.Infrastructure.Persistence;
 
