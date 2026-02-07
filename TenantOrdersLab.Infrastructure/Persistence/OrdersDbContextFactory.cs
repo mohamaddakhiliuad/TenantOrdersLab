@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿/*using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace TenantOrdersLab.Infrastructure.Persistence
@@ -11,7 +11,8 @@ namespace TenantOrdersLab.Infrastructure.Persistence
                 .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=TenantOrdersLab;Trusted_Connection=True;TrustServerCertificate=True")
                 .Options;
 
-            return new OrdersDbContext(options);
+            //return new OrdersDbContext(options);
         }
     }
 }
+*/

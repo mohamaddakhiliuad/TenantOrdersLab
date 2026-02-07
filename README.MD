@@ -211,7 +211,7 @@ Read‑side uses projections instead of navigation graphs.
 
 ---
 
-## 11. Key Interview‑Level Takeaways
+## 11. Key  Takeaways
 
 - EF Core is **not just an ORM**, it is a *modeling engine*
 - Design‑time and runtime are different worlds

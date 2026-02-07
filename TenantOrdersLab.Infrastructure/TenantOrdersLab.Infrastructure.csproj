@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TenantOrdersLab.App\TenantOrdersLab.App.csproj" />
     <ProjectReference Include="..\TenantOrdersLab.Domain\TenantOrdersLab.Domain.csproj" />
   </ItemGroup>
 

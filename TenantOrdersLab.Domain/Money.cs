@@ -26,5 +26,10 @@ namespace TenantOrdersLab.Domain
             if (Currency != other.Currency) throw new InvalidOperationException("Cannot add amounts with different currencies");
             return new Money(Amount + other.Amount, Currency);
         }
+
+        public static object Of(decimal totalAmount, string currency)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -53,5 +53,10 @@ namespace TenantOrdersLab.Domain
         }
        
         private void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+
+        public static Order CreateNew(int id, object total)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
