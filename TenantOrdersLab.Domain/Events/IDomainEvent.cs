@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TenantOrdersLab.Domain.Abstractions
+namespace TenantOrdersLab.Domain.Events
 {
     /// <summary>
     /// Contract for domain events raised by aggregates.

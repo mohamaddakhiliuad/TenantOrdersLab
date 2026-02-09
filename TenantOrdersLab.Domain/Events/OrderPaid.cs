@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TenantOrdersLab.Domain.Abstractions;
 
-namespace TenantOrdersLab.Domain
+namespace TenantOrdersLab.Domain.Events
 {
     public record OrderPaid(
          int OrderId,

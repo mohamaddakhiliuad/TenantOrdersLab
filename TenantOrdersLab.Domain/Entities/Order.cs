@@ -56,7 +56,9 @@ namespace TenantOrdersLab.Domain.Entities
 
         public static Order CreateNew(int id, object total)
         {
-            throw new NotImplementedException();
+            Order order = new Order(id, (Money)total, 0); // CustomerId will be set later
+                                                          //order.Raise(new OrderCreated(order.Id));
+            return order;
         }
     }
 }

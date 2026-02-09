@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TenantOrdersLab.App.Common
+namespace TenantOrdersLab.App.Abstractions.Common
 {
     /// <summary>
     /// Minimal Result type for application use cases.

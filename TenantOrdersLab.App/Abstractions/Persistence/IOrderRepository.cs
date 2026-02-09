@@ -21,11 +21,11 @@ namespace TenantOrdersLab.App.Abstractions.Persistence
         /// Loads an Order aggregate intended for modification in a write use case.
         /// Infrastructure ensures tenant safety and the appropriate tracking behavior.
         /// </summary>
-        Task<Order?> GetForUpdateAsync(int orderId, CancellationToken cancellationToken = default);
+        Task<TenantOrdersLab.Domain.Entities.Order?> GetForUpdateAsync(int orderId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Adds a new Order aggregate to the persistence session.
         /// </summary>
-        void Add(Order order);
+        void Add(TenantOrdersLab.Domain.Entities.Order order);
     }
 }

@@ -4,6 +4,7 @@ using TenantOrdersLab.App.Abstractions;
 using TenantOrdersLab.App.Orders.Commands.PlaceOrder;
 using TenantOrdersLab.App.Abstractions;
 using TenantOrdersLab.App.Abstractions.Common;
+using TenantOrdersLab.App.Abstractions.Persistence;
 
 namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
 {
@@ -16,25 +17,25 @@ namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
     /// </summary>
     public sealed class PlaceOrderHandler
     {
-        private readonly BadCopyOrdersDbContext _db;
+        private readonly IOrdersUnitOfWork _uow;
 
-        public PlaceOrderHandler(BadCopyOrdersDbContext db)
+        public PlaceOrderHandler(IOrdersUnitOfWork uow)
         {
-            _db = db;
+            _uow = uow;
         }
 
         public async Task<Result<PlaceOrderResult>> HandleAsync(
             PlaceOrderCommand command,
             CancellationToken cancellationToken = default)
         {
-            var order = await _db.GetOrderForUpdateAsync(command.OrderId, cancellationToken);
+            var order = await _uow.Orders. GetForUpdateAsync(command.OrderId, cancellationToken);
             if (order is null)
                 return Result<PlaceOrderResult>.Failure("Order not found.");
 
             // Domain transition (no persistence logic here)
             order.Place();
 
-            await _db.SaveChangesAsync(cancellationToken);
+            await _uow.SaveChangesAsync(cancellationToken);
 
             // Collect domain events AFTER commit (implementation depends on your Domain base class)
             // If you have order.PullDomainEvents() => use it.

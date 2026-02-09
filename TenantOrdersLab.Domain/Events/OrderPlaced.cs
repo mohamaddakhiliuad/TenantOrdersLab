@@ -1,5 +1,4 @@
 ﻿using System;
-using TenantOrdersLab.Domain.Abstractions;
 
 namespace TenantOrdersLab.Domain.Events
 {

@@ -1,28 +1,25 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.App.Orders.Commands.CreateOrder;
-using TenantOrdersLab.App.Abstractions;
-using TenantOrdersLab.Domain.Entities;
-using TenantOrdersLab.Domain.ValueObjects;
 using TenantOrdersLab.App.Abstractions.Common;
+using TenantOrdersLab.App.Abstractions.Persistence;
+using TenantOrdersLab.App.Orders.Commands.CreateOrder;
+using TenantOrdersLab.Domain.ValueObjects;
 
-namespace TenantOrdersLab.App.Orders.Commands.CreateOrder
+namespace TenantOrdersLab.App.Order.Commands.CreateOrder
 {
     /// <summary>
     /// Use case: CreateOrder
-    /// - Validates customer exists (tenant-safe, enforced by Infrastructure query filter / tenant boundary)
-    /// - Creates Order in New status
-    /// - Commits changes
+    /// - Validates the customer exists (tenant-safe; enforced by Infrastructure)
+    /// - Creates a new Order aggregate
+    /// - Commits changes as a single transaction boundary
     /// </summary>
     public sealed class CreateOrderHandler
     {
-        private readonly BadCopyOrdersDbContext _db;
+        private readonly IOrdersUnitOfWork _uow;
 
-        public CreateOrderHandler(BadCopyOrdersDbContext db)
+        public CreateOrderHandler(IOrdersUnitOfWork uow)
         {
-            _db = db;
+            _uow = uow;
         }
 
         public async Task<Result<CreateOrderResult>> HandleAsync(
@@ -30,25 +27,23 @@ namespace TenantOrdersLab.App.Orders.Commands.CreateOrder
             CancellationToken cancellationToken = default)
         {
             // 1) Validate customer exists (write-side retrieval)
-            var customer = await _db.GetCustomerForUpdateAsync(command.CustomerId, cancellationToken);
+            var customer = await _uow.Customers.GetForUpdateAsync(command.CustomerId, cancellationToken);
             if (customer is null)
                 return Result<CreateOrderResult>.Failure("Customer not found.");
 
             // 2) Create domain value object(s)
-            // NOTE: adjust Money ctor/factory to match your Domain implementation
             var total = Money.Of(command.TotalAmount, command.Currency);
 
-            // 3) Create order (domain)
-            // NOTE: adjust Order constructor/factory to match your Domain implementation
-            var order = Order.CreateNew(customer.Id, total);
+            // 3) Create order (domain behavior / factory)
+            var order = Domain.Entities.Order.CreateNew(customer.Id, total);
 
-            // 4) Persist (Infrastructure will implement AddOrder)
-            _db.AddOrder(order);
+            // 4) Persist new aggregate
+            _uow.Orders.Add(order);
 
-            // 5) Commit
-            await _db.SaveChangesAsync(cancellationToken);
+            // 5) Commit (transaction boundary)
+            await _uow.SaveChangesAsync(cancellationToken);
 
             return Result<CreateOrderResult>.Success(new CreateOrderResult(order.Id));
         }
     }
-}   
+}
