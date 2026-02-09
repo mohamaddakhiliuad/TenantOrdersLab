@@ -10,7 +10,8 @@ namespace TenantOrdersLab.Domain.Entities
     {
         New = 0,
         Placed = 1,
-        Paid = 2
+        Paid = 2,
+        Canceld = 3
     }
     public class Order : ITenantScoped, IAudited, IHasDomainEvents
     {
@@ -57,8 +58,22 @@ namespace TenantOrdersLab.Domain.Entities
         public static Order CreateNew(int id, object total)
         {
             Order order = new Order(id, (Money)total, 0); // CustomerId will be set later
-                                                          //order.Raise(new OrderCreated(order.Id));
+          //  order.Raise(new OrderCreated(order.Id));
             return order;
         }
+
+        public void Cancel(string reason)
+        {
+            if (Status != OrderStatus.Placed)
+                throw new DomainException("Only placed orders can be canceled.");
+
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new DomainException("Cancel reason is required.");
+
+            Status = OrderStatus.Canceld;
+
+           // Raise(new OrderCanceled(Id, reason));
+        }
+
     }
 }
