@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Events;
 using TenantOrdersLab.Domain.Abstractions;
+using TenantOrdersLab.Domain.Entities;
 
 namespace TenantOrdersLab.Infrastructure.Persistence;
 
@@ -34,6 +35,8 @@ public sealed class OrdersDbContext : DbContext
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _domainEventDispatcher = domainEventDispatcher ?? throw new ArgumentNullException(nameof(domainEventDispatcher));
     }
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Customer> Customers => Set<Customer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,9 +76,16 @@ public sealed class OrdersDbContext : DbContext
             if (!typeof(ITenantScoped).IsAssignableFrom(entityType.ClrType))
                 continue;
 
+            
+
             var parameter = Expression.Parameter(entityType.ClrType, "e");
 
-            // EF.Property<string>(e, "TenantId") == tenantId
+            // Use EF.Property to access TenantId dynamically.
+            // This is required because TenantId may be configured as a Shadow Property,
+            // or it may not be explicitly defined on the entity or interface.
+            // EF.Property tells EF Core to read the column from the database
+            // even if the property does not exist directly on the CLR class.
+            //Oure Goals=> EF.Property<string>(e, "TenantId") == tenantId
             var left = Expression.Call(
                 typeof(EF),
                 nameof(EF.Property),
@@ -86,6 +96,11 @@ public sealed class OrdersDbContext : DbContext
             var right = Expression.Constant(tenantId);
             var body = Expression.Equal(left, right);
             var lambda = Expression.Lambda(body, parameter);
+
+
+            // Apply a global query filter for the current entity.
+            // This filter is stored in the EF model metadata and automatically
+            // injected into all queries to enforce tenant isolation.
 
             modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
         }

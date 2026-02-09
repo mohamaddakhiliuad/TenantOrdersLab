@@ -17,4 +17,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Order\Commands\CancelOrder\" />
+    <Folder Include="Order\Commands\CompleteOrder\" />
+    <Folder Include="Order\Commands\ShipOrder\" />
+    <Folder Include="Order\Commands\PayOrder\" />
+  </ItemGroup>
+
 </Project>
