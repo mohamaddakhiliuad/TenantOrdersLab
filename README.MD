@@ -1,236 +1,281 @@
-﻿# TenantOrdersLab – EF Core & Migrations (Clean Architecture + DDD)
+﻿# TenantOrdersLab
 
-> **Purpose**  
-This document captures *what was built*, *why it was built this way*, and *what to remember before interviews*.  
-It is intentionally practical, experience‑driven, and publication‑ready.
+> **A portfolio-grade EF Core + DDD lab demonstrating how to keep persistence inside strict architectural boundaries while maintaining performance, clarity, and multi-tenancy safety.**
 
 ---
 
-## 1. Architectural Principles Used
+## 🧭 What is TenantOrdersLab?
 
-### Clean Architecture Boundaries
-- **Domain**: Pure business logic (no EF, no attributes, no persistence concerns)
-- **Infrastructure**: EF Core, DbContext, mappings, migrations, policies
-- **App / Startup**: Composition only (may not even reference DbContext)
+**TenantOrdersLab** is a hands-on learning and demonstration project designed to show **how EF Core should be used in real systems**, not as a CRUD shortcut but as an infrastructure concern inside a **Clean Architecture + Domain‑Driven Design (DDD)** setup.
 
-**Rule:** Domain must compile even if EF Core is removed.
+This repository is intentionally built as a **lab**:
+- concepts are isolated,
+- trade-offs are explicit,
+- and every architectural decision is explainable in an interview.
+
+It is not a toy CRUD app.
+It is a *thinking engineer’s* EF Core project.
 
 ---
 
-## 2. DbContext Design (Step 3.1)
+## 🎯 Core Goals
 
-### Key Decisions
+- Design **Aggregate-centric domain behavior** (not anemic models)
+- Prevent **ORM leakage** into Domain and Application layers
+- Separate **Read Side vs Write Side** properly
+- Enforce **multi-tenancy and auditing** at the infrastructure boundary
+- Build **migration-safe** EF Core configurations
+- Produce a project that can be confidently discussed, defended, and extended to an API
+
+---
+
+## 🧱 Architecture Overview
+
+TenantOrdersLab follows **Clean Architecture** with strict dependency direction:
+
+```
+┌─────────────────────────────┐
+│         API (Phase 3)       │
+│  (Composition Root only)    │
+└────────────▲────────────────┘
+             │
+┌────────────┴────────────────┐
+│        Application           │
+│   (Use Cases & Orchestration)│
+└────────────▲────────────────┘
+             │
+┌────────────┴────────────────┐
+│           Domain             │
+│ (Aggregates, Rules, Events)  │
+└────────────▲────────────────┘
+             │
+┌────────────┴────────────────┐
+│        Infrastructure        │
+│ (EF Core, DB, Persistence)   │
+└─────────────────────────────┘
+```
+
+### Dependency Rules
+- **Domain** depends on nothing
+- **Application** depends only on Domain
+- **Infrastructure** depends on Application + Domain
+- **API** depends on Application + Infrastructure
+
+---
+
+## 🧠 Key Design Principles
+
+- ❌ No EF Core attributes in Domain
+- ❌ No DbContext usage in Application logic
+- ❌ No `Include()` in normal read queries
+- ❌ No business logic inside DbContext or repositories
+
+- ✅ All business rules live inside Aggregates
+- ✅ All state transitions are explicit methods
+- ✅ Read models are projection-based and no‑tracking
+- ✅ Multi-tenancy and auditing are enforced automatically
+
+---
+
+# 🚧 Phase 1 — Domain + EF Core Foundations
+
+## 🎯 Objective
+
+Build a **rock-solid persistence foundation** while keeping the Domain completely pure and independent.
+
+---
+
+## 🧩 Domain Layer (Pure Business Core)
+
+### Aggregates
+- **Order** (Aggregate Root)
+- **Customer** (Aggregate Root)
+
+### Value Objects
+- **Money** (Amount + Currency)
+
+### Domain Behavior
+- Order lifecycle managed *inside the aggregate*
+- Invalid state transitions prevented via `DomainException`
+- Domain Events recorded in-memory using a pull-based pattern
+
+### Key Guarantee
+> The Domain has **zero knowledge** of EF Core, databases, or persistence concerns.
+
+---
+
+## 🗄️ Infrastructure Layer — EF Core Mapping
+
+### DbContext
 - `OrdersDbContext` lives **only** in Infrastructure
-- No EF attributes in Domain
-- All mapping done via **Fluent API**
+- All configuration is done via **Fluent API**
+- No data annotations
 
-```csharp
-public sealed class OrdersDbContext : DbContext
-{
-    public OrdersDbContext(DbContextOptions<OrdersDbContext> options)
-        : base(options) { }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);
-        base.OnModelCreating(modelBuilder);
-    }
-}
-```
-
-### Why `ApplyConfigurationsFromAssembly`
-- Automatically loads all `IEntityTypeConfiguration<T>`
-- DbContext never changes when entities grow
-- Supports modular, scalable mapping
+### Value Object Mapping
+- `Money` mapped as an **Owned Type**
+- Flattened into Order table columns:
+  - `TotalAmount`
+  - `TotalCurrency`
 
 ---
 
-## 3. Fluent API vs Attributes
+## 👻 Shadow Properties (Cross‑Cutting Concerns)
 
-**Why Fluent API was chosen**:
-- Keeps Domain clean
-- Better separation of concerns
-- Supports advanced mappings (Owned Types, Shadow Properties, Filters)
-- Aligns with DDD principles
+Implemented as **EF Core shadow properties** (not visible in Domain):
 
-> Attributes are convenient but leak persistence into Domain.
-
----
-
-## 4. Entity Mapping Example – Order
-
-### Concepts Used
-- Explicit primary key
-- Enum stored as int
-- Value Object mapped as Owned Type
-- Domain Events ignored by EF
-
-```csharp
-builder.HasKey(x => x.Id);
-builder.Property(x => x.Id).ValueGeneratedNever();
-builder.Property(x => x.Status).HasConversion<int>();
-
-builder.OwnsOne(x => x.Total, money =>
-{
-    money.Property(p => p.Amount).HasColumnName("TotalAmount");
-    money.Property(p => p.Currency).HasColumnName("TotalCurrency");
-});
-
-builder.Ignore("_domainEvents");
-```
-
----
-
-## 5. Shadow Properties (Step 3.3)
-
-### Why Shadow Properties
-- Infrastructure concerns only
-- No Domain pollution
-- Ideal for multi‑tenancy and auditing
-
-### Implemented Shadows
 - `TenantId`
 - `CreatedAtUtc`
 - `UpdatedAtUtc`
 - `RowVersion` (optimistic concurrency)
 
-```csharp
-builder.Property<string>("TenantId").IsRequired();
-builder.Property<DateTime>("CreatedAtUtc").IsRequired();
-builder.Property<DateTime>("UpdatedAtUtc").IsRequired();
-builder.Property<byte[]>("RowVersion").IsRowVersion();
-```
+These are:
+- enforced automatically
+- never manually set in Domain or Application
+- applied consistently across entities
 
 ---
 
-## 6. Design‑Time vs Runtime (Critical Learning)
+## 🧭 Multi‑Tenancy
 
-### The Problem Encountered
-EF Core migrations failed with:
-> Unable to resolve DbContextOptions
+- Tenant isolation enforced at the **query level**
+- Global Query Filter based on `TenantId`
+- Implemented using `EF.Property` (safe for shadow properties)
 
-**Reason:**
-- DbContext lives in Infrastructure
-- Startup project did not register it
-- EF Tools could not construct DbContext at design‑time
-
-### The Correct Solution
-`IDesignTimeDbContextFactory<T>`
-
-```csharp
-public sealed class OrdersDbContextFactory
-    : IDesignTimeDbContextFactory<OrdersDbContext>
-{
-    public OrdersDbContext CreateDbContext(string[] args)
-    {
-        var options = new DbContextOptionsBuilder<OrdersDbContext>()
-            .UseSqlServer("(localdb)\\MSSQLLocalDB")
-            .Options;
-
-        return new OrdersDbContext(options);
-    }
-}
-```
-
-**Key Insight:**
-> Migration is a *design‑time build*, not runtime execution.
+> Cross-tenant data access is structurally impossible.
 
 ---
 
-## 7. Null‑Safety in OnModelCreating
+## 🔁 SaveChanges Pipeline
 
-### Issue
-Query filters depended on runtime services (TenantProvider).
+On every commit:
+- TenantId is injected
+- Audit fields are updated
+- Concurrency is enforced via RowVersion
 
-### Fix
-Guard runtime‑only logic:
-```csharp
-if (_tenantProvider is null) return;
-```
-
-**Rule:**
-> `OnModelCreating` must be safe without runtime dependencies.
+All without polluting business logic.
 
 ---
 
-## 8. Migration Lifecycle (Mental Model)
+## 🧪 Migration Reliability
 
-Migration = **Model Diff**
+Phase 1 explicitly tackles real EF Core problems:
+- design-time vs runtime DbContext creation
+- EF version alignment
+- safe migrations without breaking previous history
 
-1. Modify model (Domain / Configuration)
-2. Build project
-3. EF creates DbContext (design‑time)
-4. EF diffs current model vs snapshot
-5. Generates migration (`Up` / `Down`)
-6. Applies to database
-
-```powershell
-dotnet ef migrations add <Name>
-dotnet ef database update
-```
+This ensures migrations are:
+- predictable
+- repeatable
+- and production-safe
 
 ---
 
-## 9. Adding New Changes – What Happens?
+# 🚀 Phase 2 — Application Layer + Read/Write Separation
 
-### Add Column to Existing Table
-- Change mapping (or domain)
-- New migration
-- `ALTER TABLE`
+## 🎯 Objective
 
-### Add New Table
-- New entity
-- New configuration
-- New migration
-- `CREATE TABLE`
-
-**Golden Rule:**
-> Never modify applied migrations. Always add a new one.
+Move from **CRUD thinking** to **Use‑Case‑Driven design**, and demonstrate how EF Core should be *controlled*, not abused.
 
 ---
 
-## 10. Relationship Mapping – Customer ↔ Order
+## ✍️ Application Layer (Use Case Orchestration)
 
-### Chosen Model (DDD‑friendly)
-- `Order` references `Customer`
-- `Customer` does NOT own Orders collection
+The Application layer expresses **system intent**, not data access.
 
-```csharp
-builder.HasOne(o => o.Customer)
-       .WithMany()
-       .HasForeignKey(o => o.CustomerId)
-       .OnDelete(DeleteBehavior.Restrict);
-```
+Responsibilities:
+- Orchestrate use cases
+- Coordinate domain behavior
+- Control transaction boundaries
 
-### Why No `Customer.Orders`
-- Preserves Aggregate boundaries
-- Avoids large object graphs
-- Prevents accidental eager loading
-
-Read‑side uses projections instead of navigation graphs.
+It does **not**:
+- expose IQueryable
+- contain EF Core logic
+- make persistence decisions
 
 ---
 
-## 11. Key  Takeaways
+## 🧱 Write Side (Commands)
 
-- EF Core is **not just an ORM**, it is a *modeling engine*
-- Design‑time and runtime are different worlds
-- Fluent API enables clean DDD
-- Migrations are snapshots + diffs
-- Relationships affect **memory graphs**, not just DB schema
-- Shadow properties are ideal for cross‑cutting concerns
+Characteristics:
+- Tracking enabled
+- Aggregates loaded explicitly
+- State transitions executed via domain methods
+- Commit happens in a single, clear boundary
 
----
-
-## 12. When to Use This Document
-
-- Pre‑interview refresh
-- Explaining EF Core decisions to a team
-- README for portfolio project
-- Teaching juniors *why*, not just *how*
+Write side exists to **change the system safely**.
 
 ---
 
-**Status:** Migration phase complete ✔  
-**Next logical steps:** Read‑side projections, concurrency tests, policy enforcement
+## 👀 Read Side (Queries)
+
+Read side is designed for **performance and safety**:
+
+- Projection directly into DTOs
+- `AsNoTracking()` everywhere
+- No entity graphs
+- No implicit lazy loading
+- SQL observability via `TagWith`
+
+This avoids:
+- N+1 queries
+- over-fetching
+- memory explosions
+
+---
+
+## 🚫 No-Include Policy
+
+| Scenario | Include |
+|--------|---------|
+| Read side (normal) | ❌ Never |
+| Write side (rare) | ⚠️ With caution |
+| Performance demos | ✅ Explicit |
+
+This rule alone eliminates most EF Core production issues.
+
+---
+
+## 🧠 Learning Outcomes
+
+After Phase 2, this project demonstrates:
+
+- EF Core used as **Infrastructure**, not a design driver
+- Real separation of Read vs Write models
+- Aggregate-centric domain behavior
+- Tenant-safe persistence by construction
+- A system that can grow into an API without refactoring
+
+---
+
+## 📌 Current Status
+
+✔ Phase 1 — Completed & Locked  
+✔ Phase 2 — Completed & Locked
+
+The project is now ready for:
+
+> **Phase 3 — API / Composition Root / End‑to‑End Flow**
+
+---
+
+## 🏁 Why This Project Matters
+
+TenantOrdersLab is designed to answer the question:
+
+> “Can you build a real EF Core system without letting EF Core design your system?”
+
+This repository proves that the answer is **yes**.
+
+--- 
+
+## 🔜 Next Phases (Roadmap)
+
+- Phase 3: ASP.NET Core API (Composition Root)
+- Phase 4: Integration tests & concurrency demos
+- Phase 5: Performance comparison (Projection vs Include)
+
+---
+
+**Author:** Mohammad Dakhilitarghi  
+**Focus:** EF Core · DDD · Clean Architecture · Multi‑Tenancy
 
