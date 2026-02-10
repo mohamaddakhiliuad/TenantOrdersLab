@@ -11,7 +11,8 @@ namespace TenantOrdersLab.Domain.Entities
         New = 0,
         Placed = 1,
         Paid = 2,
-        Canceld = 3
+        Canceld = 3,
+        Completed = 4
     }
     public class Order : ITenantScoped, IAudited, IHasDomainEvents
     {
@@ -58,7 +59,7 @@ namespace TenantOrdersLab.Domain.Entities
         public static Order CreateNew(int id, object total)
         {
             Order order = new Order(id, (Money)total, 0); // CustomerId will be set later
-          //  order.Raise(new OrderCreated(order.Id));
+          order.Raise(new OrderCreated(order.Id));
             return order;
         }
 
@@ -72,8 +73,15 @@ namespace TenantOrdersLab.Domain.Entities
 
             Status = OrderStatus.Canceld;
 
-           // Raise(new OrderCanceled(Id, reason));
+            Raise(new OrderCanceled(Id, reason));
         }
 
+        public void Complete()
+        {
+            if (Status != OrderStatus.Paid)
+                throw new DomainException("Only Paid orders can be completed.");
+            Status = OrderStatus.Completed;
+            Raise(new OrderCompleted(Id));
+        }
     }
 }
