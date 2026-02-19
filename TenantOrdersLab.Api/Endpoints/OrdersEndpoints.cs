@@ -2,7 +2,6 @@
 using TenantOrdersLab.Api.Contracts.Orders;
 using TenantOrdersLab.App.Order.Commands.CancelOrder;
 using TenantOrdersLab.App.Order.Commands.CreateOrder;
-using TenantOrdersLab.App.Orders.Commands.CreateOrder;
 
 namespace TenantOrdersLab.Api.Endpoints;
 

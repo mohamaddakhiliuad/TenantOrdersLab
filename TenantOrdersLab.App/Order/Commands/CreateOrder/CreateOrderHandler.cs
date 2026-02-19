@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Persistence;
-using TenantOrdersLab.App.Orders.Commands.CreateOrder;
+using TenantOrdersLab.App.Order.Commands.CreateOrder;
 using TenantOrdersLab.Domain.ValueObjects;
 namespace TenantOrdersLab.App.Order.Commands.CreateOrder
 {

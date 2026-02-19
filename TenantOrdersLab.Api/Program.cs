@@ -1,8 +1,11 @@
-﻿using TenantOrdersLab.Api.Endpoints;
+﻿using TenantOrdersLab.Api.DependencyInjection;
+using TenantOrdersLab.Api.Endpoints;
 using TenantOrdersLab.Api.Middleware;
+using TenantOrdersLab.App.DependencyInjection;
 using TenantOrdersLab.App.Order.Commands.CancelOrder;
 using TenantOrdersLab.App.Order.Commands.CreateOrder;
 using TenantOrdersLab.Infrastructure.DependencyInjection;
+using TenantOrdersLab.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,13 +18,13 @@ builder.Services.AddSwaggerGen(c =>
 
 // Cross-cutting for web
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHealthChecks();
 
+builder.Services.AddApi();
 // Infrastructure (DbContext + Repos + UoW + Tenant + Clock)
 builder.Services.AddInfrastructure(builder.Configuration);
-
 // Application
-builder.Services.AddScoped<CreateOrderHandler>();
-builder.Services.AddScoped<CancelOrderHandler>();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 

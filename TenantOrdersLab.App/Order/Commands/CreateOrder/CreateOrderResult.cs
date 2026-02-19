@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TenantOrdersLab.App.Orders.Commands.CreateOrder
+namespace TenantOrdersLab.App.Order.Commands.CreateOrder
 {
     /// <summary>
     /// Output boundary for CreateOrder use case.
