@@ -4,15 +4,17 @@ using TenantOrdersLab.App.Abstractions.Persistence;
 
 namespace TenantOrdersLab.Infrastructure.Persistence;
 
-internal sealed class OrdersUnitOfWork : IOrdersUnitOfWork
+public sealed class OrdersUnitOfWork : IOrdersUnitOfWork
 {
     private readonly OrdersDbContext _db;
 
-    public OrdersUnitOfWork(OrdersDbContext db, IOrderRepository orders, ICustomerRepository customers)
+    public OrdersUnitOfWork(OrdersDbContext db, IOrderRepository orderRepository, ICustomerRepository customerRepository )
     {
         _db = db;
-        Orders = orders;
-        Customers = customers;
+
+        _db = db ?? throw new ArgumentNullException(nameof(db));
+        Orders = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
+        Customers = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
     }
 
     public IOrderRepository Orders { get; }

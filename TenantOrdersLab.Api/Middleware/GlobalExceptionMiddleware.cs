@@ -48,9 +48,8 @@ public sealed class GlobalExceptionMiddleware : IMiddleware
         // ASP.NET throws OperationCanceledException.
         // This is NOT a server error, so we avoid logging noise.
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-        {
-            // 499 = Client Closed Request (commonly used, not official)
-            context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
+        {  // client aborted; don't log as error
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
 
         // Any other unhandled exception from the application

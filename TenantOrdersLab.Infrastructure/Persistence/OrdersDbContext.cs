@@ -19,9 +19,11 @@ namespace TenantOrdersLab.Infrastructure.Persistence;
 /// </summary>
 public sealed class OrdersDbContext : DbContext
 {
+
     private readonly ITenantProvider _tenantProvider;
     private readonly IClock _clock;
     private readonly IDomainEventDispatcher _domainEventDispatcher;
+    public string CurrentTenantId => _tenantProvider.TenantId;
 
     // ✅ Only one constructor: prevents "silent degraded mode"
     public OrdersDbContext(
@@ -69,42 +71,33 @@ public sealed class OrdersDbContext : DbContext
     // -----------------------------
     private void ApplyTenantQueryFilters(ModelBuilder modelBuilder)
     {
-        var tenantId = _tenantProvider.TenantId;
-
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (!typeof(ITenantScoped).IsAssignableFrom(entityType.ClrType))
                 continue;
 
-            
-
             var parameter = Expression.Parameter(entityType.ClrType, "e");
 
-            // Use EF.Property to access TenantId dynamically.
-            // This is required because TenantId may be configured as a Shadow Property,
-            // or it may not be explicitly defined on the entity or interface.
-            // EF.Property tells EF Core to read the column from the database
-            // even if the property does not exist directly on the CLR class.
-            //Oure Goals=> EF.Property<string>(e, "TenantId") == tenantId
-            var left = Expression.Call(
+            // EF.Property<string>(e, "TenantId")
+            var tenantProperty = Expression.Call(
                 typeof(EF),
                 nameof(EF.Property),
                 new[] { typeof(string) },
                 parameter,
                 Expression.Constant("TenantId"));
 
-            var right = Expression.Constant(tenantId);
-            var body = Expression.Equal(left, right);
+            // ✅ this.CurrentTenantId  (dynamic per DbContext instance / per request)
+            var currentTenant = Expression.Property(
+                Expression.Constant(this),
+                nameof(CurrentTenantId));
+
+            var body = Expression.Equal(tenantProperty, currentTenant);
             var lambda = Expression.Lambda(body, parameter);
-
-
-            // Apply a global query filter for the current entity.
-            // This filter is stored in the EF model metadata and automatically
-            // injected into all queries to enforce tenant isolation.
 
             modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
         }
     }
+
 
     // -----------------------------
     // SaveChanges Policy (GENERIC)

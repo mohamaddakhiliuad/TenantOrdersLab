@@ -28,7 +28,7 @@ namespace TenantOrdersLab.App.Order.Commands.CreateOrder
             // 1) Validate customer exists (write-side retrieval)
             var customer = await _uow.Customers.GetForUpdateAsync(command.CustomerId, cancellationToken);
             if (customer is null)
-                return Result<CreateOrderResult>.Failure("Customer not found.");
+                return Result<CreateOrderResult>.Failure("not_found: Customer not found.");
 
             // 2) Create domain value object(s)
             var total = Money.Of(command.TotalAmount, command.Currency);

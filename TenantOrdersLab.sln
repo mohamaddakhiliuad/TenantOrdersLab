@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DOC", "DOC", "{B779472B-6B6
 	ProjectSection(SolutionItems) = preProject
 		TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md = TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md
 		TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md = TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md
+		..\..\Downloads\tenant_orders_lab_error_handling_guide.md = ..\..\Downloads\tenant_orders_lab_error_handling_guide.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantOrdersLab.Api", "TenantOrdersLab.Api\TenantOrdersLab.Api.csproj", "{BE6EDB77-6CB9-4640-99C2-CB545CE7B0B7}"

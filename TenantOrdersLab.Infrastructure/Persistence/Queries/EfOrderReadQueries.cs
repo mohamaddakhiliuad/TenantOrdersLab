@@ -15,7 +15,7 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Queries;
 /// - Projects into DTOs (no Includes / no entity graphs)
 /// - Tenant isolation is enforced by global query filters in OrdersDbContext
 /// </summary>
-internal sealed class EfOrderReadQueries : IOrderReadQueries
+public sealed class EfOrderReadQueries : IOrderReadQueries
 {
     private readonly OrdersDbContext _db;
 

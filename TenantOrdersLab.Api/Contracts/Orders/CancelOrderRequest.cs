@@ -1,6 +1,6 @@
-﻿namespace TenantOrdersLab.Api.Contracts.Orders
-{
-    public class CancelOrderRequest
-    {
-    }
-}
+﻿namespace TenantOrdersLab.Api.Contracts.Orders;
+
+public sealed record CancelOrderRequest(
+    int OrderId,
+    string Reason
+);

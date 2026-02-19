@@ -25,11 +25,11 @@ public sealed class CancelOrderHandler
         CancellationToken cancellationToken = default)
     {
         if (command.OrderId <= 0)
-            return Result<CancelOrderResult>.Failure("Invalid OrderId.");
+            return Result<CancelOrderResult>.Failure("validation: Invalid OrderId.");
 
         var order = await _uow.Orders.GetForUpdateAsync(command.OrderId, cancellationToken);
         if (order is null)
-            return Result<CancelOrderResult>.Failure("Order not found.");
+            return Result<CancelOrderResult>.Failure("not_found: Order not found.");
 
         // Domain behavior (business rule lives in the aggregate)
         order.Cancel(command.Reason);
