@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -24,17 +24,15 @@ public sealed class OrdersDbContext : DbContext
     private const string CreatedAtUtcShadow = "CreatedAtUtc";
     private const string UpdatedAtUtcShadow = "UpdatedAtUtc";
 
-    private static readonly MethodInfo SetTenantFilterOpenGeneric =
-        typeof(OrdersDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.Instance | BindingFlags.NonPublic)
-        ?? throw new InvalidOperationException($"Missing method: {nameof(SetTenantFilter)}");
-
     private readonly ITenantProvider _tenantProvider;
     private readonly IClock _clock;
     private readonly IDomainEventDispatcher _domainEventDispatcher;
 
+    /// <summary>
+    /// Current tenant for this DbContext instance (per-request scope).
+    /// </summary>
     public string CurrentTenantId => _tenantProvider.TenantId;
 
-    // ✅ Only one constructor: prevents "silent degraded mode"
     public OrdersDbContext(
         DbContextOptions<OrdersDbContext> options,
         ITenantProvider tenantProvider,
@@ -77,10 +75,15 @@ public sealed class OrdersDbContext : DbContext
     }
 
     // -----------------------------
-    // Tenant Query Filter (GENERIC)
+    // Tenant Query Filter (NO REFLECTION)
     // -----------------------------
     private void ApplyTenantQueryFilters(ModelBuilder modelBuilder)
     {
+        // Cache a DbContext property access: this.CurrentTenantId
+        var currentTenantExpr = Expression.Property(
+            Expression.Constant(this),
+            nameof(CurrentTenantId));
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             var clrType = entityType.ClrType;
@@ -88,21 +91,24 @@ public sealed class OrdersDbContext : DbContext
             if (!typeof(ITenantScoped).IsAssignableFrom(clrType))
                 continue;
 
-            // Build: SetTenantFilter<TEntity>(modelBuilder)
-            var closed = SetTenantFilterOpenGeneric.MakeGenericMethod(clrType);
-            closed.Invoke(this, new object[] { modelBuilder });
-        }
-    }
+            // e =>
+            var parameter = Expression.Parameter(clrType, "e");
 
-    /// <summary>
-    /// Strongly-typed filter so EF can translate + model-cache correctly.
-    /// Captures CurrentTenantId (per DbContext instance / per request).
-    /// </summary>
-    private void SetTenantFilter<TEntity>(ModelBuilder modelBuilder)
-        where TEntity : class, ITenantScoped
-    {
-        modelBuilder.Entity<TEntity>()
-            .HasQueryFilter(e => EF.Property<string>(e, TenantIdShadow) == CurrentTenantId);
+            // EF.Property<string>(e, "TenantId")
+            var tenantIdProperty = Expression.Call(
+                typeof(EF),
+                nameof(EF.Property),
+                new[] { typeof(string) },
+                parameter,
+                Expression.Constant(TenantIdShadow));
+
+            // EF.Property<string>(e,"TenantId") == this.CurrentTenantId
+            var body = Expression.Equal(tenantIdProperty, currentTenantExpr);
+
+            var lambda = Expression.Lambda(body, parameter);
+
+            modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+        }
     }
 
     // -----------------------------
@@ -129,20 +135,21 @@ public sealed class OrdersDbContext : DbContext
             return;
 
         // Guard: only set if shadow property exists in model
-        var tenantProp = entry.Metadata.FindProperty(TenantIdShadow);
-        if (tenantProp is null)
+        if (entry.Metadata.FindProperty(TenantIdShadow) is null)
             return;
 
         var tenantEntryProp = entry.Property(TenantIdShadow);
 
-        // Always enforce tenant for new entities
         if (entry.State == EntityState.Added)
         {
+            // Always set tenant for new entities
             tenantEntryProp.CurrentValue = tenantId;
             return;
         }
 
-        // For modified entities: enforce tenant AND prevent tenant switching
+        // For modified entities:
+        // - enforce tenant
+        // - prevent tenant switching (never persist TenantId changes)
         tenantEntryProp.CurrentValue = tenantId;
         tenantEntryProp.IsModified = false;
     }
@@ -152,7 +159,6 @@ public sealed class OrdersDbContext : DbContext
         if (entry.Entity is not IAudited)
             return;
 
-        // Guard: only set if shadow properties exist in model
         var createdProp = entry.Metadata.FindProperty(CreatedAtUtcShadow);
         var updatedProp = entry.Metadata.FindProperty(UpdatedAtUtcShadow);
 
@@ -167,7 +173,7 @@ public sealed class OrdersDbContext : DbContext
         {
             if (updatedProp is not null) entry.Property(UpdatedAtUtcShadow).CurrentValue = nowUtc;
 
-            // Optional hardening: never allow CreatedAtUtc to be modified
+            // Never allow CreatedAtUtc to be modified
             if (createdProp is not null) entry.Property(CreatedAtUtcShadow).IsModified = false;
         }
     }

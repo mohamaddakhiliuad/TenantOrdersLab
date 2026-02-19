@@ -1,47 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using TenantOrdersLab.Api.Endpoints;
 using TenantOrdersLab.Api.Middleware;
-using TenantOrdersLab.Api.Endpoints;
-using TenantOrdersLab.Infrastructure.Persistence;
-using TenantOrdersLab.Infrastructure.Persistence.Queries;
-using TenantOrdersLab.App.Abstractions.Persistence;
-using TenantOrdersLab.App.Order.Commands.CreateOrder;
 using TenantOrdersLab.App.Order.Commands.CancelOrder;
+using TenantOrdersLab.App.Order.Commands.CreateOrder;
 using TenantOrdersLab.Infrastructure.DependencyInjection;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// ---------- Swagger (Swashbuckle) ----------
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "TenantOrdersLab API", Version = "v1" });
 });
 
-// ---------- Middleware ----------
-//builder.Services.AddTransient<GlobalExceptionMiddleware>();
+// Cross-cutting for web
+builder.Services.AddHttpContextAccessor();
 
-// ---------- DbContext ----------
-
-var cs = builder.Configuration.GetConnectionString("OrdersDb")
-         ?? throw new InvalidOperationException("Connection string 'OrdersDb' is missing.");
-
-builder.Services.AddDbContext<OrdersDbContext>(opt =>
-{
-    opt.UseSqlServer(cs);
-   
-});
-
-// ---------- Infra: Repos + UoW + Queries ----------
-// ⚠️ اینجا فرض می‌کنم شما Implementation ها رو داری.
-// اگر اسم کلاس‌ها متفاوت بود، فقط اسم‌ها رو جایگزین کن.
+// Infrastructure (DbContext + Repos + UoW + Tenant + Clock)
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddScoped<IOrderRepository, OrdersRepository>();
-builder.Services.AddScoped<ICustomerRepository, CustomersRepository >();
-builder.Services.AddScoped<IOrdersUnitOfWork, OrdersUnitOfWork>();
 
-builder.Services.AddScoped<IOrderReadQueries, EfOrderReadQueries>();
-
-// ---------- Application Handlers ----------
+// Application
 builder.Services.AddScoped<CreateOrderHandler>();
 builder.Services.AddScoped<CancelOrderHandler>();
 
@@ -56,8 +34,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
-
-// API routes
 app.MapOrdersEndpoints();
 
 app.Run();
