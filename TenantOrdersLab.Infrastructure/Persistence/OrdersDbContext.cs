@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
-using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Events;
 using TenantOrdersLab.Domain.Abstractions;
@@ -19,10 +20,18 @@ namespace TenantOrdersLab.Infrastructure.Persistence;
 /// </summary>
 public sealed class OrdersDbContext : DbContext
 {
+    private const string TenantIdShadow = "TenantId";
+    private const string CreatedAtUtcShadow = "CreatedAtUtc";
+    private const string UpdatedAtUtcShadow = "UpdatedAtUtc";
+
+    private static readonly MethodInfo SetTenantFilterOpenGeneric =
+        typeof(OrdersDbContext).GetMethod(nameof(SetTenantFilter), BindingFlags.Instance | BindingFlags.NonPublic)
+        ?? throw new InvalidOperationException($"Missing method: {nameof(SetTenantFilter)}");
 
     private readonly ITenantProvider _tenantProvider;
     private readonly IClock _clock;
     private readonly IDomainEventDispatcher _domainEventDispatcher;
+
     public string CurrentTenantId => _tenantProvider.TenantId;
 
     // ✅ Only one constructor: prevents "silent degraded mode"
@@ -37,6 +46,7 @@ public sealed class OrdersDbContext : DbContext
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _domainEventDispatcher = domainEventDispatcher ?? throw new ArgumentNullException(nameof(domainEventDispatcher));
     }
+
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Customer> Customers => Set<Customer>();
 
@@ -73,31 +83,27 @@ public sealed class OrdersDbContext : DbContext
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            if (!typeof(ITenantScoped).IsAssignableFrom(entityType.ClrType))
+            var clrType = entityType.ClrType;
+
+            if (!typeof(ITenantScoped).IsAssignableFrom(clrType))
                 continue;
 
-            var parameter = Expression.Parameter(entityType.ClrType, "e");
-
-            // EF.Property<string>(e, "TenantId")
-            var tenantProperty = Expression.Call(
-                typeof(EF),
-                nameof(EF.Property),
-                new[] { typeof(string) },
-                parameter,
-                Expression.Constant("TenantId"));
-
-            // ✅ this.CurrentTenantId  (dynamic per DbContext instance / per request)
-            var currentTenant = Expression.Property(
-                Expression.Constant(this),
-                nameof(CurrentTenantId));
-
-            var body = Expression.Equal(tenantProperty, currentTenant);
-            var lambda = Expression.Lambda(body, parameter);
-
-            modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            // Build: SetTenantFilter<TEntity>(modelBuilder)
+            var closed = SetTenantFilterOpenGeneric.MakeGenericMethod(clrType);
+            closed.Invoke(this, new object[] { modelBuilder });
         }
     }
 
+    /// <summary>
+    /// Strongly-typed filter so EF can translate + model-cache correctly.
+    /// Captures CurrentTenantId (per DbContext instance / per request).
+    /// </summary>
+    private void SetTenantFilter<TEntity>(ModelBuilder modelBuilder)
+        where TEntity : class, ITenantScoped
+    {
+        modelBuilder.Entity<TEntity>()
+            .HasQueryFilter(e => EF.Property<string>(e, TenantIdShadow) == CurrentTenantId);
+    }
 
     // -----------------------------
     // SaveChanges Policy (GENERIC)
@@ -112,25 +118,57 @@ public sealed class OrdersDbContext : DbContext
             if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
                 continue;
 
-            // TenantId for all ITenantScoped
-            if (entry.Entity is ITenantScoped)
-            {
-                entry.Property("TenantId").CurrentValue = tenantId;
-            }
+            ApplyTenantPolicy(entry, tenantId);
+            ApplyAuditPolicy(entry, now);
+        }
+    }
 
-            // Auditing for all IAudited
-            if (entry.Entity is IAudited)
-            {
-                if (entry.State == EntityState.Added)
-                {
-                    entry.Property("CreatedAtUtc").CurrentValue = now;
-                    entry.Property("UpdatedAtUtc").CurrentValue = now;
-                }
-                else
-                {
-                    entry.Property("UpdatedAtUtc").CurrentValue = now;
-                }
-            }
+    private static void ApplyTenantPolicy(EntityEntry entry, string tenantId)
+    {
+        if (entry.Entity is not ITenantScoped)
+            return;
+
+        // Guard: only set if shadow property exists in model
+        var tenantProp = entry.Metadata.FindProperty(TenantIdShadow);
+        if (tenantProp is null)
+            return;
+
+        var tenantEntryProp = entry.Property(TenantIdShadow);
+
+        // Always enforce tenant for new entities
+        if (entry.State == EntityState.Added)
+        {
+            tenantEntryProp.CurrentValue = tenantId;
+            return;
+        }
+
+        // For modified entities: enforce tenant AND prevent tenant switching
+        tenantEntryProp.CurrentValue = tenantId;
+        tenantEntryProp.IsModified = false;
+    }
+
+    private static void ApplyAuditPolicy(EntityEntry entry, DateTime nowUtc)
+    {
+        if (entry.Entity is not IAudited)
+            return;
+
+        // Guard: only set if shadow properties exist in model
+        var createdProp = entry.Metadata.FindProperty(CreatedAtUtcShadow);
+        var updatedProp = entry.Metadata.FindProperty(UpdatedAtUtcShadow);
+
+        if (entry.State == EntityState.Added)
+        {
+            if (createdProp is not null) entry.Property(CreatedAtUtcShadow).CurrentValue = nowUtc;
+            if (updatedProp is not null) entry.Property(UpdatedAtUtcShadow).CurrentValue = nowUtc;
+            return;
+        }
+
+        if (entry.State == EntityState.Modified)
+        {
+            if (updatedProp is not null) entry.Property(UpdatedAtUtcShadow).CurrentValue = nowUtc;
+
+            // Optional hardening: never allow CreatedAtUtc to be modified
+            if (createdProp is not null) entry.Property(CreatedAtUtcShadow).IsModified = false;
         }
     }
 
