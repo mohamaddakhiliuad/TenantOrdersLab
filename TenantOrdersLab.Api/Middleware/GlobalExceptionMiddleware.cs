@@ -1,6 +1,8 @@
 ﻿using System.Net.Mime;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using TenantOrdersLab.Api.Common;
+using TenantOrdersLab.Domain.Common;
 
 namespace TenantOrdersLab.Api.Middleware;
 
@@ -51,7 +53,11 @@ public sealed class GlobalExceptionMiddleware : IMiddleware
         {  // client aborted; don't log as error
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
         }
-
+        catch (DomainException dex)
+        {
+            // Business/domain failure -> map to the same contract as ResultHttpMapper.
+            await ApiProblemFactory.WriteProblemAsync(dex.Message, context);
+        }
         // Any other unhandled exception from the application
         catch (Exception ex)
         {

@@ -8,7 +8,6 @@ using TenantOrdersLab.Infrastructure.DependencyInjection;
 using TenantOrdersLab.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
-
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -38,5 +37,6 @@ if (app.Environment.IsDevelopment())
 
 app.MapHealthChecks("/health");
 app.MapOrdersEndpoints();
-
+app.MapOrdersReadEndpoints();
+app.MapTenantEndpoints();
 app.Run();

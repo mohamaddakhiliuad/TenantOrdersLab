@@ -10,7 +10,7 @@ namespace TenantOrdersLab.Domain.Entities
 {
     public sealed class Customer : ITenantScoped, IAudited
     {
-        public int Id { get; }
+        public int Id { get; private set; }
         public string Name { get; private set; }
 
         public Customer(int id, string name)

@@ -17,21 +17,20 @@ namespace TenantOrdersLab.Domain.Entities
     public class Order : ITenantScoped, IAudited, IHasDomainEvents
     {
         private readonly List<IDomainEvent> _domainEvents = new();
-        public int Id { get; }
+        public int Id { get; private set; }
         public Money Total { get; private set; }
         public int CustomerId { get; }
         public Customer? Customer { get; private set; }
 
         private Order() { } // For EF Core
 
-        public Order(int id, Money total, int customerId)
+        public Order(int customerId, Money total)
         {
 
-
-            if (id <= 0) throw new DomainException("Id must be a positive number.");
+                      
             if (customerId <= 0) throw new DomainException("CustomerId must be a positive number.");
             // if (totalAmount <= 0) throw new DomainException("TotalAmount must be greater than zero.");
-            Id = id;
+           // Id = id;
             Total = total ?? throw new ArgumentNullException(nameof(total));
             CustomerId = customerId;
             Status = OrderStatus.New;
@@ -56,9 +55,9 @@ namespace TenantOrdersLab.Domain.Entities
 
         private void Raise(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
 
-        public static Order CreateNew(int id, object total)
+        public static Order CreateNew(int customerID, Money total)
         {
-            Order order = new Order(id, (Money)total, 0); // CustomerId will be set later
+            Order order = new Order(customerID, (Money)total); // CustomerId will be set later
           order.Raise(new OrderCreated(order.Id));
             return order;
         }
@@ -66,10 +65,10 @@ namespace TenantOrdersLab.Domain.Entities
         public void Cancel(string reason)
         {
             if (Status != OrderStatus.Placed)
-                throw new DomainException("Only placed orders can be canceled.");
+                throw new DomainException("validation: Only placed orders can be canceled.");
 
             if (string.IsNullOrWhiteSpace(reason))
-                throw new DomainException("Cancel reason is required.");
+                throw new DomainException("validation: Cancel reason is required.");
 
             Status = OrderStatus.Canceld;
 

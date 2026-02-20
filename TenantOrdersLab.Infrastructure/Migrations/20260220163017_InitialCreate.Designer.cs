@@ -12,8 +12,8 @@ using TenantOrdersLab.Infrastructure.Persistence;
 namespace TenantOrdersLab.Infrastructure.Migrations
 {
     [DbContext(typeof(OrdersDbContext))]
-    [Migration("20260204165246_Add_Customers_And_FK")]
-    partial class Add_Customers_And_FK
+    [Migration("20260220163017_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,10 +25,13 @@ namespace TenantOrdersLab.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("TenantOrdersLab.Domain.Customer", b =>
+            modelBuilder.Entity("TenantOrdersLab.Domain.Entities.Customer", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -58,10 +61,13 @@ namespace TenantOrdersLab.Infrastructure.Migrations
                     b.ToTable("Customers", (string)null);
                 });
 
-            modelBuilder.Entity("TenantOrdersLab.Domain.Order", b =>
+            modelBuilder.Entity("TenantOrdersLab.Domain.Entities.Order", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -97,15 +103,15 @@ namespace TenantOrdersLab.Infrastructure.Migrations
                     b.ToTable("Orders", (string)null);
                 });
 
-            modelBuilder.Entity("TenantOrdersLab.Domain.Order", b =>
+            modelBuilder.Entity("TenantOrdersLab.Domain.Entities.Order", b =>
                 {
-                    b.HasOne("TenantOrdersLab.Domain.Customer", "Customer")
+                    b.HasOne("TenantOrdersLab.Domain.Entities.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.OwnsOne("TenantOrdersLab.Domain.Money", "Total", b1 =>
+                    b.OwnsOne("TenantOrdersLab.Domain.ValueObjects.Money", "Total", b1 =>
                         {
                             b1.Property<int>("OrderId")
                                 .HasColumnType("int");

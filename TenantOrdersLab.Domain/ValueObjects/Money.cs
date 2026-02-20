@@ -27,9 +27,24 @@ namespace TenantOrdersLab.Domain.ValueObjects
             return new Money(Amount + other.Amount, Currency);
         }
 
-        public static object Of(decimal totalAmount, string currency)
+        public static Money Of(decimal totalAmount, string currency)
         {
-            throw new NotImplementedException();
+            if (totalAmount < 0)
+                throw new ArgumentOutOfRangeException(nameof(totalAmount), "Amount cannot be negative.");
+
+            if (string.IsNullOrWhiteSpace(currency))
+                throw new ArgumentException("Currency is required.", nameof(currency));
+
+            // Normalize currency (simple ISO-ish guard)
+            currency = currency.Trim().ToUpperInvariant();
+
+            if (currency.Length != 3)
+                throw new ArgumentException("Currency must be a 3-letter code (e.g., USD).", nameof(currency));
+
+            // Optional: round to 2 decimals (depends on your domain rules)
+            totalAmount = decimal.Round(totalAmount, 2, MidpointRounding.AwayFromZero);
+
+            return new Money(totalAmount, currency);
         }
     }
 }

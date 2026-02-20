@@ -16,7 +16,7 @@ namespace TenantOrdersLab.Domain.Tests.Order
         public void Place_Should_Throw_When_Order_Is_Already_Placed()
         {
             // Arrange  
-            var order = new TenantOrdersLab.Domain.Entities.Order(1, new Money(100, "USD"), 1);
+            var order = new TenantOrdersLab.Domain.Entities.Order(1, new Money(100, "USD"));
             order.Place();
             // Act & Assert  
             var exception = Assert.Throws<DomainException>(() => order.Place());
@@ -27,7 +27,7 @@ namespace TenantOrdersLab.Domain.Tests.Order
         public void PullDomainEvents_Should_Clear_Events_After_Call()
         {
             // Arrange  
-            var order = new TenantOrdersLab.Domain.Entities.Order(1, new Money(100, "USD"), 1);
+            var order = new TenantOrdersLab.Domain.Entities.Order(1, new Money(100, "USD"));
             order.Place();
             // Act  
             var events = order.PullDomainEvents();

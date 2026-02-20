@@ -53,7 +53,7 @@ public sealed class OrdersDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);
 
         // ✅ Tenant filter is always on (Phase 2 safety)
-        ApplyTenantQueryFilters(modelBuilder);
+       // ApplyTenantQueryFilters(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }

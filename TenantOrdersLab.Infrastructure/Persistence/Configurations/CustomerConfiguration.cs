@@ -14,7 +14,7 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
             builder.HasKey(x => x.Id);
             // چون Id رو خودت می‌دی (در ctor می‌سازی)، معمولاً اینو می‌ذاریم:
             builder.Property(x => x.Id)
-                   .ValueGeneratedNever();
+                   .ValueGeneratedOnAdd();
             // Simple properties
             builder.Property(x => x.Name)
                    .IsRequired()

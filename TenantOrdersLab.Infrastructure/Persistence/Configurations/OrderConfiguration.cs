@@ -15,7 +15,7 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
 
             // چون Id رو خودت می‌دی (در ctor می‌سازی)، معمولاً اینو می‌ذاریم:
             builder.Property(x => x.Id)
-                   .ValueGeneratedNever();
+                   .ValueGeneratedOnAdd();
 
             // Simple properties
             builder.Property(x => x.CustomerId)

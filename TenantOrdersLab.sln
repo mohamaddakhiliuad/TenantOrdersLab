@@ -24,6 +24,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DOC", "DOC", "{B779472B-6B61-450F-A056-D14F3EBFF77B}"
 	ProjectSection(SolutionItems) = preProject
 		TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md = TenantOrdersLab.App\Doc\APP-Lesson_to_Learn.md
+		# TenantOrdersLab – Logging & Error Handling Architecturer.md = # TenantOrdersLab – Logging & Error Handling Architecturer.md
 		TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md = TenantOrdersLab.Infrastructure\docs\tenant_orders_lab_ef_core_migrations_clean_architecture_notes.md
 		..\..\Downloads\tenant_orders_lab_error_handling_guide.md = ..\..\Downloads\tenant_orders_lab_error_handling_guide.md
 	EndProjectSection
