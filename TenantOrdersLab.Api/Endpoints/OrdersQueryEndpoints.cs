@@ -5,7 +5,7 @@ using TenantOrdersLab.App.Order.Queries.ListOrdersByCustomer;
 
 namespace TenantOrdersLab.Api.Endpoints;
 
-public static class OrdersReadEndpoints
+public static class OrdersRequestEndpoints
 {
     public static IEndpointRouteBuilder MapOrdersReadEndpoints(this IEndpointRouteBuilder app)
     {
@@ -32,10 +32,15 @@ public static class OrdersReadEndpoints
 
     private static async Task<IResult> GetByIdAsync(
         int id,
-        [FromServices] GetOrderByIdHandler handler,
+         GetOrderByIdHandler handler,
         HttpContext http,
         CancellationToken ct)
     {
+        if (id <= 0)
+        {
+
+            return ApiProblemFactory.ToProblemResult("validation: Id must be greater than 0.", http);
+        }
         var query = new GetOrderByIdQuery(id);
         var result = await handler.HandleAsync(query, ct);
 
@@ -45,17 +50,16 @@ public static class OrdersReadEndpoints
 
     private static async Task<IResult> ListByCustomerAsync(
         int customerId,
-        [FromServices] ListOrdersByCustomerHandler handler,
+         ListOrdersByCustomerHandler handler,
         HttpContext http,
         CancellationToken ct)
     {
         // Minimal APIs already enforce {customerId:int}, but keeping this is fine for clearer errors.
         if (customerId <= 0)
         {
-            return Results.Problem(
-                title: "Validation failed",
-                detail: "customerId must be greater than 0.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return ApiProblemFactory.ToProblemResult(
+        "validation: customerId must be greater than 0.",
+        http);
         }
 
         var query = new ListOrdersByCustomerQuery(customerId);

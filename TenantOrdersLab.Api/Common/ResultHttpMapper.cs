@@ -12,6 +12,7 @@ public static class ResultHttpMapper
     }
 
     public static IResult ToHttpResult<T>(this Result<T> result, HttpContext http, Func<T, IResult>? onSuccess = null)
+    
     {
         if (result.IsSuccess)
         {

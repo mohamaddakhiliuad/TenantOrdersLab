@@ -1,6 +1,4 @@
 ﻿namespace TenantOrdersLab.Api.Contracts.Orders
 {
-    public class CompleteOrderRequest
-    {
-    }
+    public sealed record CompleteOrderContracts(int OrderId);
 }

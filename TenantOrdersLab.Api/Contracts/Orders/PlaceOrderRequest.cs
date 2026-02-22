@@ -1,6 +1,8 @@
 ﻿namespace TenantOrdersLab.Api.Contracts.Orders
 {
-    public class PlaceOrderRequest
-    {
-    }
+    public sealed record PlaceOrderRequest(
+    int OrderID
+
+);
+
 }

@@ -2,10 +2,11 @@
 using TenantOrdersLab.Api.Contracts.Orders;
 using TenantOrdersLab.App.Order.Commands.CancelOrder;
 using TenantOrdersLab.App.Order.Commands.CreateOrder;
+using TenantOrdersLab.App.Orders.Commands.PlaceOrder;
 
 namespace TenantOrdersLab.Api.Endpoints;
 
-public static class OrdersEndpoints
+public static class OrdersCommandsEndpoints
 {
     public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
@@ -18,6 +19,12 @@ public static class OrdersEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
+        group.MapPost("/PlaceOrder", PlaceOrder)
+           .WithName("PlaceOrder")
+           .Produces(StatusCodes.Status200OK)
+           .ProducesProblem(StatusCodes.Status400BadRequest)
+           .ProducesProblem(StatusCodes.Status404NotFound)
+           .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapPost("/cancel", CancelOrder)
             .WithName("CancelOrder")
@@ -42,6 +49,20 @@ public static class OrdersEndpoints
 
         return result.ToHttpResult(http, onSuccess: r =>
             Results.Created($"/api/orders/{r.OrderId}", r));
+    }
+    private static async Task<IResult> PlaceOrder(
+       PlaceOrderRequest request,
+      PlaceOrderHandler handler,
+       HttpContext http,
+       CancellationToken ct)
+    {
+        // You can add lightweight API validation here if needed, but ideally keep it in App.
+        var cmd = new PlaceOrderCommand(request.OrderID);
+
+        var result = await handler.HandleAsync(cmd, ct);
+
+        return result.ToHttpResult(http);
+          
     }
 
     private static async Task<IResult> CancelOrder(
