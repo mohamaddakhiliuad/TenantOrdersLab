@@ -1,6 +1,7 @@
 ﻿using System.Net.Mime;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TenantOrdersLab.Api.Common;
 using TenantOrdersLab.Domain.Common;
 
@@ -57,6 +58,11 @@ public sealed class GlobalExceptionMiddleware : IMiddleware
         {
             // Business/domain failure -> map to the same contract as ResultHttpMapper.
             await ApiProblemFactory.WriteProblemAsync(dex.Message, context);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            await ApiProblemFactory.WriteProblemAsync("conflict: The resource was modified by another request. Refresh and retry.", context);
+           
         }
         // Any other unhandled exception from the application
         catch (Exception ex)

@@ -92,7 +92,7 @@ public static class OrdersCommandsEndpoints
         HttpContext http,
         CancellationToken ct)
     {
-        var cmd = new CancelOrderCommand(request.OrderId, request.Reason);
+        var cmd = new CancelOrderCommand(request.OrderId, request.Reason,request.ExpectedRowVersion);
         var result = await handler.HandleAsync(cmd, ct);
 
         return result.ToHttpResult(http);

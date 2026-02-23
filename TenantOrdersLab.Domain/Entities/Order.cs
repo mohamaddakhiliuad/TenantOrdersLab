@@ -21,6 +21,7 @@ namespace TenantOrdersLab.Domain.Entities
         public Money Total { get; private set; }
         public int CustomerId { get; }
         public Customer? Customer { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         private Order() { } // For EF Core
 

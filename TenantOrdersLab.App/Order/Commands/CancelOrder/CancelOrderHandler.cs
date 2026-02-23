@@ -34,6 +34,7 @@ public sealed class CancelOrderHandler
         // Domain behavior (business rule lives in the aggregate)
         order.Cancel(command.Reason);
 
+        _uow.SetOriginalRowVersion(order,command.ExpectedRowVersion); // Concurrency control: ensures the order wasn't modified since it was loaded
         await _uow.SaveChangesAsync(cancellationToken);
 
         return Result<CancelOrderResult>.Success(new CancelOrderResult(order.Id));

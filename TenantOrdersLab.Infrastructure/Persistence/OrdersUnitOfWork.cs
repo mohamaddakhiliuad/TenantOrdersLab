@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using TenantOrdersLab.App.Abstractions.Persistence;
+using TenantOrdersLab.Domain.Entities;
 
 namespace TenantOrdersLab.Infrastructure.Persistence;
 
@@ -22,4 +23,12 @@ public sealed class OrdersUnitOfWork : IOrdersUnitOfWork
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         => _db.SaveChangesAsync(cancellationToken);
+
+    public void SetOriginalRowVersion(Order order, string expectedRowVersion)
+    {
+        _db.Entry(order)
+       .Property(x => x.RowVersion)
+       .OriginalValue =
+           Convert.FromBase64String(expectedRowVersion);
+    }
 }

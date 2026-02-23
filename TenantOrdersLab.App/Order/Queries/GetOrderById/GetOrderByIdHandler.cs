@@ -18,6 +18,7 @@ public sealed class GetOrderByIdHandler
         _queries = queries;
     }
 
+
     public async Task<Result<OrderDetailsDto>> HandleAsync(
         GetOrderByIdQuery query,
         CancellationToken cancellationToken = default)

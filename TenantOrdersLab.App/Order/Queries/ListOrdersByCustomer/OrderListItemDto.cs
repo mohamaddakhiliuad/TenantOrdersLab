@@ -14,4 +14,5 @@ public sealed record OrderListItemDto
     public string Currency { get; init; } = string.Empty;
 
     public DateTime? CreatedAtUtc { get; init; }
+    public string RowVersion { get; init; } = default!;
 }

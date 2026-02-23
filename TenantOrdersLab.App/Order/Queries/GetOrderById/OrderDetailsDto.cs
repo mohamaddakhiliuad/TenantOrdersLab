@@ -18,4 +18,5 @@ public sealed record OrderDetailsDto
 
     public DateTime? CreatedAtUtc { get; init; }
     public DateTime? UpdatedAtUtc { get; init; }
+    public string RowVersion { get; init; } = default!;
 }

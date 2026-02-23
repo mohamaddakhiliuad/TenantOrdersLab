@@ -31,9 +31,8 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
                 builder.Property<DateTime>("UpdatedAtUtc").IsRequired();
             }
 
-            // RowVersion (optimistic concurrency) — معمولاً برای همه مفید است
-            builder.Property<byte[]>("RowVersion")
-                   .IsRowVersion();
+           
+            
         }
     }
 }

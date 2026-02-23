@@ -24,44 +24,74 @@ public sealed class EfOrderReadQueries : IOrderReadQueries
         _db = db;
     }
 
-    public Task<OrderDetailsDto?> GetOrderByIdAsync(int orderId, CancellationToken cancellationToken = default)
+    
+      public async Task<OrderDetailsDto?> GetOrderByIdAsync(int orderId, CancellationToken cancellationToken = default)
     {
-        return _db.Orders
+        var row = await _db.Orders
             .AsNoTracking()
             .TagWith("Query: GetOrderById")
             .Where(o => o.Id == orderId)
-            .Select(o => new OrderDetailsDto
+            .Select(o => new
             {
-                OrderId = o.Id,
-                CustomerId = o.CustomerId,
-                Status = o.Status.ToString(),        // adjust if Status is string
-                TotalAmount = o.Total.Amount,        // adjust to your Money model
-                Currency = o.Total.Currency,         // adjust to your Money model
+                o.Id,
+                o.CustomerId,
+                Status = o.Status.ToString(),
+                TotalAmount = o.Total.Amount,
+                Currency = o.Total.Currency,
                 CreatedAtUtc = EF.Property<System.DateTime?>(o, "CreatedAtUtc"),
                 UpdatedAtUtc = EF.Property<System.DateTime?>(o, "UpdatedAtUtc"),
+
+                // ✅ now REAL property on entity
+                o.RowVersion
             })
             .SingleOrDefaultAsync(cancellationToken);
+
+        if (row is null) return null;
+
+        return new OrderDetailsDto
+        {
+            OrderId = row.Id,
+            CustomerId = row.CustomerId,
+            Status = row.Status,
+            TotalAmount = row.TotalAmount,
+            Currency = row.Currency,
+            CreatedAtUtc = row.CreatedAtUtc,
+            UpdatedAtUtc = row.UpdatedAtUtc,
+
+            // ✅ Base64 outside SQL
+            RowVersion = Convert.ToBase64String(row.RowVersion)
+        };
     }
 
+
     public async Task<IReadOnlyList<OrderListItemDto>> ListOrdersByCustomerAsync(
-        int customerId,
-        CancellationToken cancellationToken = default)
+     int customerId,
+     CancellationToken cancellationToken = default)
     {
-        var list = await _db.Orders
+        var rows = await _db.Orders
             .AsNoTracking()
             .TagWith("Query: ListOrdersByCustomer")
             .Where(o => o.CustomerId == customerId)
             .OrderByDescending(o => o.Id)
-            .Select(o => new OrderListItemDto
+            .Select(o => new
             {
-                OrderId = o.Id,
-                Status = o.Status.ToString(),        // adjust if needed
-                TotalAmount = o.Total.Amount,        // adjust
-                Currency = o.Total.Currency,         // adjust
+                o.Id,
+                Status = o.Status.ToString(),
+                TotalAmount = o.Total.Amount,
+                Currency = o.Total.Currency,
                 CreatedAtUtc = EF.Property<System.DateTime?>(o, "CreatedAtUtc"),
+                o.RowVersion
             })
             .ToListAsync(cancellationToken);
 
-        return list;
+        return rows.Select(r => new OrderListItemDto
+        {
+            OrderId = r.Id,
+            Status = r.Status,
+            TotalAmount = r.TotalAmount,
+            Currency = r.Currency,
+            CreatedAtUtc = r.CreatedAtUtc,
+            RowVersion = Convert.ToBase64String(r.RowVersion)
+        }).ToList();
     }
-}
+    }

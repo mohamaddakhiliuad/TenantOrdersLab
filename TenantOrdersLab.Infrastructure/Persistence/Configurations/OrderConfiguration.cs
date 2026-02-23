@@ -32,6 +32,9 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Status)
                    .IsRequired()
                    .HasConversion<int>(); // enum as int (default هم هست، ولی explicit بهتره)
+            builder.Property(x => x.RowVersion)
+                  .IsRowVersion()
+                  .IsConcurrencyToken();
 
             // Money as Value Object (Owned)
             builder.OwnsOne(x => x.Total, money =>
@@ -45,7 +48,9 @@ namespace TenantOrdersLab.Infrastructure.Persistence.Configurations
                      .HasColumnName("TotalCurrency")
                      .HasMaxLength(3)
                      .IsRequired();
+
             });
+           
             builder.Navigation(x => x.Total).IsRequired();
 
             // -------------------------------------------------

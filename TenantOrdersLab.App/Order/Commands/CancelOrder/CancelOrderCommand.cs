@@ -11,5 +11,6 @@ namespace TenantOrdersLab.App.Order.Commands.CancelOrder;
 /// </summary>
 public sealed record CancelOrderCommand(
     int OrderId,
-    string Reason
+    string Reason,
+      string ExpectedRowVersion
 );

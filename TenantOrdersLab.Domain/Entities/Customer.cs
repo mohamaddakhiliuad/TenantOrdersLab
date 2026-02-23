@@ -12,6 +12,7 @@ namespace TenantOrdersLab.Domain.Entities
     {
         public int Id { get; private set; }
         public string Name { get; private set; }
+        public byte[] RowVersion { get; private set; } = default!;
 
         public Customer(int id, string name)
         {

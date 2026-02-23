@@ -19,6 +19,8 @@ namespace TenantOrdersLab.App.Abstractions.Persistence
         IOrderRepository Orders { get; }
         ICustomerRepository Customers { get; }
 
+        void SetOriginalRowVersion(TenantOrdersLab.Domain.Entities.Order  order, string expectedRowVersion);
+
         /// <summary>
         /// Commits all changes performed in the current use case.
         /// This is the transaction boundary from the Application perspective.

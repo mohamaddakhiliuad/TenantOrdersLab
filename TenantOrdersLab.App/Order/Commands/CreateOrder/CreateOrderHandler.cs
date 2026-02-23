@@ -17,10 +17,7 @@ namespace TenantOrdersLab.App.Order.Commands.CreateOrder
     {
         private readonly IOrdersUnitOfWork _uow;
 
-        public CreateOrderHandler(
-     IOrdersUnitOfWork uow,
-     IIdempotencyStore idempotency,
-     ITenantProvider tenantProvider)
+        public CreateOrderHandler( IOrdersUnitOfWork uow, IIdempotencyStore idempotency, ITenantProvider tenantProvider)
         {
             _uow = uow;
             _idempotency = idempotency;
@@ -84,7 +81,6 @@ namespace TenantOrdersLab.App.Order.Commands.CreateOrder
             _uow.Orders.Add(order);
 
             await _uow.SaveChangesAsync(cancellationToken);
-
             // 3️⃣ Mark idempotency as completed
             await _idempotency.CompleteAsync(
                 tenantId,

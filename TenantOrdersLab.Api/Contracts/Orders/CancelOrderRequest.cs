@@ -2,5 +2,6 @@
 
 public sealed record CancelOrderRequest(
     int OrderId,
-    string Reason
+    string Reason,
+     string ExpectedRowVersion
 );
