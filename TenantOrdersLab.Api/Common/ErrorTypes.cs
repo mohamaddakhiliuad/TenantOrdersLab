@@ -45,7 +45,7 @@ public static class ApiErrorClassifier
             return (ApiErrorType.Failure, "Unknown error.");
 
         var e = error.Trim();
-
+        
         if (e.StartsWith("validation:", StringComparison.OrdinalIgnoreCase))
             return (ApiErrorType.Validation, e["validation:".Length..].Trim());
 
