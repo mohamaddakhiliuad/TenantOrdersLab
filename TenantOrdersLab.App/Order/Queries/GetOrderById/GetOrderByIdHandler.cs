@@ -23,11 +23,11 @@ public sealed class GetOrderByIdHandler
         CancellationToken cancellationToken = default)
     {
         if (query.OrderId <= 0)
-            return Result<OrderDetailsDto>.Failure("Invalid OrderId.");
+            return Result<OrderDetailsDto>.Failure("validation: Invalid OrderId.");
 
         var dto = await _queries.GetOrderByIdAsync(query.OrderId, cancellationToken);
         return dto is null
-            ? Result<OrderDetailsDto>.Failure("Order not found.")
+            ? Result<OrderDetailsDto>.Failure("not_found: Order not found.")
             : Result<OrderDetailsDto>.Success(dto);
     }
 }

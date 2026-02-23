@@ -8,6 +8,7 @@ namespace TenantOrdersLab.App.Order.Commands.CreateOrder
     public sealed record CreateOrderCommand(
         int CustomerId,
         decimal TotalAmount,
-        string Currency
+        string Currency,
+        string IdempotencyKey
     );
 }

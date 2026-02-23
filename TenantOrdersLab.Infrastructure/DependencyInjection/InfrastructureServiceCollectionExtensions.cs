@@ -6,6 +6,7 @@ using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Events;
 using TenantOrdersLab.App.Abstractions.Persistence;
 using TenantOrdersLab.Infrastructure.Persistence;
+using TenantOrdersLab.Infrastructure.Persistence.Idempotency;
 using TenantOrdersLab.Infrastructure.Persistence.Queries;
 
 
@@ -35,6 +36,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IOrderRepository, OrdersRepository>();
         services.AddScoped<ICustomerRepository, CustomersRepository>();
         services.AddScoped<IOrdersUnitOfWork, OrdersUnitOfWork>();
+        services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
 
         // ----- Read side -----
         services.AddScoped<IOrderReadQueries, EfOrderReadQueries>();

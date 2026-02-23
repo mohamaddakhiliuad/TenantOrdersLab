@@ -28,7 +28,7 @@ namespace TenantOrdersLab.Domain.Entities
         {
 
                       
-            if (customerId <= 0) throw new DomainException("CustomerId must be a positive number.");
+            if (customerId <= 0) throw new DomainException("validation: CustomerId must be a positive number.");
             // if (totalAmount <= 0) throw new DomainException("TotalAmount must be greater than zero.");
            // Id = id;
             Total = total ?? throw new ArgumentNullException(nameof(total));
@@ -47,7 +47,7 @@ namespace TenantOrdersLab.Domain.Entities
         public void Place()
         {
             if (Status != OrderStatus.New)
-                throw new DomainException("Only new orders can be placed.");
+                throw new DomainException("validation: Only new orders can be placed.");
             Status = OrderStatus.Placed;
 
             Raise(new OrderPlaced(Id, CustomerId));
@@ -64,6 +64,10 @@ namespace TenantOrdersLab.Domain.Entities
 
         public void Cancel(string reason)
         {
+            //idempotency
+            if (Status == OrderStatus.Canceld)
+                return;
+            
             if (Status != OrderStatus.Placed)
                 throw new DomainException("validation: Only placed orders can be canceled.");
 
@@ -77,8 +81,11 @@ namespace TenantOrdersLab.Domain.Entities
 
         public void Complete()
         {
-            if (Status != OrderStatus.Paid)
-                throw new DomainException("Only Paid orders can be completed.");
+            if (Status == OrderStatus.Completed)
+                return;
+                           
+       if (Status != OrderStatus.Paid)
+                throw new DomainException("validation: Only Paid orders can be completed.");
             Status = OrderStatus.Completed;
             Raise(new OrderCompleted(Id));
         }

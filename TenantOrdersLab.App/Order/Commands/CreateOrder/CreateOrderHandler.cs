@@ -4,6 +4,7 @@ using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Persistence;
 using TenantOrdersLab.App.Order.Commands.CreateOrder;
 using TenantOrdersLab.Domain.ValueObjects;
+
 namespace TenantOrdersLab.App.Order.Commands.CreateOrder
 {
     /// <summary>
@@ -16,33 +17,83 @@ namespace TenantOrdersLab.App.Order.Commands.CreateOrder
     {
         private readonly IOrdersUnitOfWork _uow;
 
-        public CreateOrderHandler(IOrdersUnitOfWork uow)
+        public CreateOrderHandler(
+     IOrdersUnitOfWork uow,
+     IIdempotencyStore idempotency,
+     ITenantProvider tenantProvider)
         {
             _uow = uow;
+            _idempotency = idempotency;
+            _tenantProvider = tenantProvider;
         }
+        private readonly IIdempotencyStore _idempotency;
+        private readonly ITenantProvider _tenantProvider;
 
         public async Task<Result<CreateOrderResult>> HandleAsync(
             CreateOrderCommand command,
             CancellationToken cancellationToken = default)
         {
-            // 1) Validate customer exists (write-side retrieval)
-            var customer = await _uow.Customers.GetForUpdateAsync(command.CustomerId, cancellationToken);
+
+            var tenantId = _tenantProvider.TenantId;
+            if (string.IsNullOrWhiteSpace(tenantId))
+                return Result<CreateOrderResult>.Failure("failure: Missing tenant context.");
+
+            if (string.IsNullOrWhiteSpace(command.IdempotencyKey))
+                return Result<CreateOrderResult>.Failure("validation: Idempotency-Key is required.");
+
+            var now = DateTime.UtcNow;
+
+            // stable request hash
+            var requestHash = IdempotencyHashing.HashCreateOrder(
+                command.CustomerId,
+                command.TotalAmount,
+                command.Currency);
+
+            // 1️⃣ Ask IdempotencyStore what to do
+            var decision = await _idempotency.TryBeginAsync(
+                tenantId,
+                command.IdempotencyKey,
+                requestHash,
+                now,
+                TimeSpan.FromDays(2),
+                cancellationToken);
+
+            if (decision.HasConflict)
+                return Result<CreateOrderResult>.Failure("conflict: Idempotency-Key reuse with different payload.");
+
+            if (decision.IsDuplicate && decision.ExistingOrderId.HasValue)
+                return Result<CreateOrderResult>.Success(
+                    new CreateOrderResult(decision.ExistingOrderId.Value));
+
+            if (decision.IsInProgress)
+                return Result<CreateOrderResult>.Failure(
+                    "conflict: Request with this Idempotency-Key is already in progress.");
+
+            // 2️⃣ Normal business logic continues
+
+            var customer = await _uow.Customers
+                .GetForUpdateAsync(command.CustomerId, cancellationToken);
+
             if (customer is null)
                 return Result<CreateOrderResult>.Failure("not_found: Customer not found.");
 
-            // 2) Create domain value object(s)
             var total = Money.Of(command.TotalAmount, command.Currency);
 
-            // 3) Create order (domain behavior / factory)
             var order = Domain.Entities.Order.CreateNew(customer.Id, total);
 
-            // 4) Persist new aggregate
             _uow.Orders.Add(order);
 
-            // 5) Commit (transaction boundary)
             await _uow.SaveChangesAsync(cancellationToken);
 
-            return Result<CreateOrderResult>.Success(new CreateOrderResult(order.Id));
+            // 3️⃣ Mark idempotency as completed
+            await _idempotency.CompleteAsync(
+                tenantId,
+                command.IdempotencyKey,
+                order.Id,
+                cancellationToken);
+
+            return Result<CreateOrderResult>.Success(
+                new CreateOrderResult(order.Id));
         }
     }
 }

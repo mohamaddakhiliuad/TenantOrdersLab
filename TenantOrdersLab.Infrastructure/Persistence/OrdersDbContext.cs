@@ -9,6 +9,7 @@ using TenantOrdersLab.App.Abstractions.Common;
 using TenantOrdersLab.App.Abstractions.Events;
 using TenantOrdersLab.Domain.Abstractions;
 using TenantOrdersLab.Domain.Entities;
+using TenantOrdersLab.Infrastructure.Persistence.Idempotency;
 
 namespace TenantOrdersLab.Infrastructure.Persistence;
 
@@ -47,7 +48,7 @@ public sealed class OrdersDbContext : DbContext
 
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<Customer> Customers => Set<Customer>();
-
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);

@@ -22,7 +22,7 @@ public sealed class ListOrdersByCustomerHandler
         CancellationToken cancellationToken = default)
     {
         if (query.CustomerId <= 0)
-            return Result<IReadOnlyList<OrderListItemDto>>.Failure("Invalid CustomerId.");
+            return Result<IReadOnlyList<OrderListItemDto>>.Failure("validation: Invalid CustomerId.");
 
         var items = await _queries.ListOrdersByCustomerAsync(query.CustomerId, cancellationToken);
         return Result<IReadOnlyList<OrderListItemDto>>.Success(items);

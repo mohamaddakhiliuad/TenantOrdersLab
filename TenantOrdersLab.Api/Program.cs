@@ -2,10 +2,10 @@
 using TenantOrdersLab.Api.Endpoints;
 using TenantOrdersLab.Api.Middleware;
 using TenantOrdersLab.App.DependencyInjection;
-using TenantOrdersLab.App.Order.Commands.CancelOrder;
-using TenantOrdersLab.App.Order.Commands.CreateOrder;
+
 using TenantOrdersLab.Infrastructure.DependencyInjection;
-using TenantOrdersLab.Infrastructure.Persistence;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 // Swagger
