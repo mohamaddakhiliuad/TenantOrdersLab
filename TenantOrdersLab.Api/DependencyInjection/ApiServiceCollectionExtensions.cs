@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using TenantOrdersLab.Api.Middleware;
+using TenantOrdersLab.Api.Validators.Orders;
 
 
 namespace TenantOrdersLab.Api.DependencyInjection;
@@ -11,8 +12,10 @@ public static class ApiServiceCollectionExtensions
     {
 
         services.AddTransient<GlobalExceptionMiddleware>();
-      
-;
+        services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
+       
+
+        ;
         return services;
     }
 }

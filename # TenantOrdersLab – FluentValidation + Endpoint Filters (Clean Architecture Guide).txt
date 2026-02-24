@@ -1,0 +1,256 @@
+﻿# TenantOrdersLab — 
+## FluentValidation + Endpoint Filters (Clean Architecture Guide)
+
+> **Goal:** Add professional request validation to the API layer **without polluting handlers/use-cases**.
+>
+> **Outcome:**
+> - Request **body** validation via FluentValidation (400 with field errors)
+> - Request **header** validation via a dedicated filter (400)
+> - **Handlers stay pure** (Application layer = business/use-case only)
+> - **Consistent error contract** through `ApiProblemFactory`
+
+---
+
+## 1) The “Three-Lane” Error Architecture
+
+### Lane A — API Boundary / Input Validation (**400**)
+- **What:** Request shape & format errors (missing fields, wrong ranges, invalid format)
+- **Where:** **API layer** (Minimal API boundary)
+- **How:** `FluentValidation` → returns **field-level errors**
+- **Not an exception** (predictable, client fault)
+
+### Lane B — Domain/Application Errors (**4xx**)
+- **What:** Business rules / invariants (not found, conflict, forbidden)
+- **Where:** Application/Domain layers
+- **How:** `Result`/`Result<T>` returns error strings with prefixes:
+  - `validation:` `not_found:` `conflict:` `unauthorized:` `forbidden:`
+- **Mapped by:** `ApiErrorClassifier` + `ApiProblemFactory`
+
+### Lane C — Unexpected System Faults (**500**)
+- **What:** Unhandled exceptions (DB down, null refs, unknown errors)
+- **Where:** anywhere
+- **How:** caught by `GlobalExceptionMiddleware`
+
+---
+
+## 2) Responsibilities (Clean Architecture Alignment)
+
+### API Layer
+✅ Owns:
+- HTTP request validation (headers/body)
+- Mapping results to HTTP responses
+- OpenAPI docs
+
+❌ Must NOT:
+- enforce domain invariants
+- throw exceptions for validation
+
+### Application Layer (Handlers)
+✅ Owns:
+- Use-case execution
+- Business rules (through domain services/entities)
+- Returning `Result` / `Result<T>` with prefixed errors
+
+❌ Must NOT:
+- return `IResult`
+- use `ProblemDetails`
+- do HTTP validation
+
+### Middleware
+✅ Owns:
+- catch unexpected exceptions
+- log unexpected failures
+- return consistent `ProblemDetails`
+
+---
+
+## 3) The Flow (Request → Response)
+
+```text
+HTTP Request
+   ↓
+[Endpoint Filters]
+   ├─ IdempotencyKeyFilter (header validation)
+   └─ FluentValidationFilter<TRequest> (body validation)
+   ↓
+Endpoint Method (thin)
+   ↓
+Handler (use-case only)
+   ↓
+Result/Result<T>
+   ↓
+ResultHttpMapper.ToHttpResult()
+   ↓
+HTTP Response (ProblemDetails or success)
+
+(Any unexpected exception)
+   ↓
+GlobalExceptionMiddleware → 500 ProblemDetails
+```
+
+---
+
+## 4) Implementation Checklist
+
+### Step 1 — Packages (TenantOrdersLab.Api)
+```bash
+dotnet add TenantOrdersLab.Api package FluentValidation
+dotnet add TenantOrdersLab.Api package FluentValidation.DependencyInjectionExtensions
+```
+
+### Step 2 — Validators Folder
+```text
+TenantOrdersLab.Api/Validators/Orders/
+```
+
+### Step 3 — Validators
+#### CreateOrderRequestValidator
+- `CustomerId > 0`
+- `TotalAmount > 0`
+- `Currency` required + exactly 3 letters
+
+#### CancelOrderRequestValidator
+- `OrderId > 0`
+- `Reason` required + length limits
+- (optional) `ExpectedRowVersion` required
+
+#### PlaceOrderRequestValidator
+- `OrderID > 0`
+
+---
+
+## 5) DI Registration in Program.cs
+
+```csharp
+using TenantOrdersLab.Api.Validators.Orders;
+
+builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
+```
+
+> This scans the API assembly and registers all validators.
+
+---
+
+## 6) ValidationResult → field errors dictionary
+
+Minimal API expects:
+`Dictionary<string, string[]>`
+
+Create:
+`TenantOrdersLab.Api/Common/ValidationExtensions.cs`
+
+```csharp
+using System.Linq;
+using FluentValidation.Results;
+
+namespace TenantOrdersLab.Api.Common;
+
+public static class ValidationExtensions
+{
+    public static Dictionary<string, string[]> ToProblemDetails(this ValidationResult result)
+        => result.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+}
+```
+
+---
+
+## 7) EndpointFilter #1 — FluentValidationFilter<TRequest>
+
+**Purpose:** Validate request bodies automatically for endpoints that accept `TRequest`.
+
+- Finds `TRequest` inside endpoint arguments
+- Resolves `IValidator<TRequest>` from DI
+- If invalid → returns **400 ValidationProblemDetails**
+- If valid → continues pipeline
+
+File:
+`TenantOrdersLab.Api/Filters/FluentValidationFilter.cs`
+
+Key behavior:
+- No duplication in endpoints
+- Keeps endpoint method thin
+
+---
+
+## 8) EndpointFilter #2 — IdempotencyKeyFilter
+
+**Why:** Header validation is not FluentValidation’s job.
+
+**Purpose:** Ensure `Idempotency-Key` exists for POSTs where idempotency is required.
+
+File:
+`TenantOrdersLab.Api/Filters/IdempotencyKeyFilter.cs`
+
+Behavior:
+- Missing header → return 400 (via `ApiProblemFactory`)
+- Present → continue
+
+---
+
+## 9) Apply Filters in OrdersCommandsEndpoints
+
+### CreateOrder
+- Add both filters:
+  - `IdempotencyKeyFilter`
+  - `FluentValidationFilter<CreateOrderRequest>`
+
+### CancelOrder
+- Add:
+  - `FluentValidationFilter<CancelOrderRequest>`
+
+### PlaceOrder
+- Add:
+  - `FluentValidationFilter<PlaceOrderRequest>`
+
+**Result:** Endpoint methods become “use-case only”.
+
+---
+
+## 10) Consistent Error Contract (ApiProblemFactory)
+
+You already have:
+- `ApiErrorClassifier` → maps prefixed errors
+- `ApiProblemFactory` → emits RFC7807 ProblemDetails
+
+**Enhancement for Ticket 2:**
+- Add a dedicated method for **field-level validation errors**
+- Ensure responses include:
+  - `title`, `status`, `instance`, `traceId`
+  - and `errors` for validation
+
+---
+
+## 11) GlobalExceptionMiddleware (Already Correct)
+
+Your middleware correctly:
+- ignores client abort cancellations (no noise)
+- maps `DomainException` through `ApiProblemFactory`
+- maps `DbUpdateConcurrencyException` to `conflict:`
+- logs unexpected exceptions and returns 500 ProblemDetails
+
+**Rule:** FluentValidation stays out of middleware.
+
+---
+
+## 12) Done Criteria
+
+✅ `POST /api/orders` with invalid body → **400** with field errors
+
+✅ `POST /api/orders` without `Idempotency-Key` → **400** with ProblemDetails
+
+✅ `POST /api/orders/cancel` invalid body → **400**
+
+✅ `POST /api/orders/PlaceOrder` with `OrderID=0` → **400**
+
+✅ Handlers do not implement HTTP validation
+
+---
+
+## 13) Interview-Ready Summary (1 paragraph)
+
+In TenantOrdersLab, request validation is handled at the API boundary using FluentValidation and endpoint filters, keeping use-case handlers pure and independent of HTTP concerns. Business rule failures are represented through Result-based error messages with lightweight prefixes (validation/not_found/conflict), classified centrally and mapped to consistent RFC7807 ProblemDetails responses. Unhandled faults are captured by a global exception middleware that logs with traceId and returns a standard 500 ProblemDetails. This creates a clean, layered error strategy aligned with Clean Architecture principles.
+

@@ -16,6 +16,8 @@ public static class ApplicationServiceCollectionExtensions
     {
         // Use Cases / Handlers
         services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<CancelOrderRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<PlaceOrderRequestValidator>();
         //Command
         services.AddScoped<CreateOrderHandler>();
         services.AddScoped<CancelOrderHandler>();
