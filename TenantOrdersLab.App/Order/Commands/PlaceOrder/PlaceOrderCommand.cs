@@ -5,5 +5,5 @@ namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
     /// <summary>
     /// Input boundary for placing an Order (transition New -> Placed).
     /// </summary>
-    public sealed record PlaceOrderCommand(int OrderId);
+    public sealed record PlaceOrderCommand(int OrderId, string ExpectedRowVersion);
 }

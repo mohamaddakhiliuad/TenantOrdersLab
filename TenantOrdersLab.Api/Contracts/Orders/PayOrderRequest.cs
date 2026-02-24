@@ -1,7 +1,6 @@
 ﻿namespace TenantOrdersLab.Api.Contracts.Orders
 
 {
-    public class PayOrderRequest
-    {
-    }
+    public sealed record PayOrderRequest(int OrderId, string ExpectedRowVersion);
+    
 }

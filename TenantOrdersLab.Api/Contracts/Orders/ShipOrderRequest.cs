@@ -1,6 +1,5 @@
 ﻿namespace TenantOrdersLab.Api.Contracts.Orders
 {
-    public class ShipOrderRequest
-    {
-    }
+    public sealed record ShipOrderRequest(int OrderId, string ExpectedRowVersion);
+   
 }

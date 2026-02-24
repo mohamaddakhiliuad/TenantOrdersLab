@@ -34,6 +34,7 @@ namespace TenantOrdersLab.App.Orders.Commands.PlaceOrder
 
             // Domain transition (no persistence logic here)
             order.Place();
+            _uow.SetOriginalRowVersion(order, command.ExpectedRowVersion); // Concurrency control: ensures the order wasn't modified since it was loaded
 
             await _uow.SaveChangesAsync(cancellationToken);
 

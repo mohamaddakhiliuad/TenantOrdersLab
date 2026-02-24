@@ -2,6 +2,7 @@
 
 public enum ApiErrorType
 {
+    unexpected,
     Validation,
     NotFound,
     Conflict,
@@ -45,7 +46,9 @@ public static class ApiErrorClassifier
             return (ApiErrorType.Failure, "Unknown error.");
 
         var e = error.Trim();
-        
+        if (e.StartsWith("Unexpected:", StringComparison.OrdinalIgnoreCase))
+            return (ApiErrorType.Validation, e["Unexpected:".Length..].Trim());
+
         if (e.StartsWith("validation:", StringComparison.OrdinalIgnoreCase))
             return (ApiErrorType.Validation, e["validation:".Length..].Trim());
 

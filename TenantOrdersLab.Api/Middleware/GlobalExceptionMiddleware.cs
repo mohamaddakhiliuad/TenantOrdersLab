@@ -52,7 +52,7 @@ public sealed class GlobalExceptionMiddleware : IMiddleware
         // This is NOT a server error, so we avoid logging noise.
         catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {  // client aborted; don't log as error
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.StatusCode = StatusCodes.Status499ClientClosedRequest;
         }
         catch (DomainException dex)
         {
@@ -74,24 +74,9 @@ public sealed class GlobalExceptionMiddleware : IMiddleware
                 context.TraceIdentifier);
 
             // Create a standard RFC 7807 error response
-            var problem = new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "Unexpected error",
-                Detail = "An unexpected error occurred.",
-                Instance = context.Request.Path
-            };
-
-            // Add traceId so support teams can match the error with logs
-            problem.Extensions["traceId"] = context.TraceIdentifier;
-
-            // Prepare the HTTP response
-            context.Response.StatusCode = problem.Status.Value;
-            context.Response.ContentType = MediaTypeNames.Application.Json;
-
-            // Return JSON response instead of letting the server crash
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(problem));
+            await ApiProblemFactory.WriteProblemAsync("Unexpected : An unexpected error occurred..", context);
+           
+              
         }
     }
 }
